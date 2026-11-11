@@ -81,5 +81,8 @@ await db.Database.MigrateAsync();
 //7 point
 // EfModelDemo.Print(db.Model);
 
+//8 point
+//await EfCrudBusinessDemo.RunAsync(db, CancellationToken.None);
+
 // Потрібен для посилання на Program з конфігурації User Secrets.
 public partial class Program;
