@@ -27,7 +27,7 @@ var db = scope.ServiceProvider.GetRequiredService<KpzDbContext>();
 // Застосовуємо всі незастосовані міграції під час запуску програми.
 await db.Database.MigrateAsync();
 
-//4 point CRUD demo
+///////////////4 point CRUD demo///////////////////
 // var crud = scope.ServiceProvider.GetRequiredService<SqlCrudRepository>();
 // var token = CancellationToken.None;
 // var email = $"crud.demo.{Guid.NewGuid():N}@example.test";
@@ -78,11 +78,14 @@ await db.Database.MigrateAsync();
 //await SqlTransactionDemo.RunAsync(connectionString, CancellationToken.None);
 
 
-//7 point
+//////////////7 point///////////////////////////
 // EfModelDemo.Print(db.Model);
 
-//8 point
+////////////////////8 point///////////////////
 //await EfCrudBusinessDemo.RunAsync(db, CancellationToken.None);
+
+////////////////////9 point///////////////////
+//await EfLinqQueriesDemo.RunAsync(db, CancellationToken.None);
 
 // Потрібен для посилання на Program з конфігурації User Secrets.
 public partial class Program;
