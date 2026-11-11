@@ -1,0 +1,32 @@
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+
+# .NET
+**/bin/
+**/obj/
+**/out/
+
+# IDE
+.idea/
+
+# Logs
+*.log
+
+# Test results
+**/TestResults/
+
+# Publish
+**/publish/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
