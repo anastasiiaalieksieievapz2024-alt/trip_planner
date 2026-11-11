@@ -70,7 +70,10 @@ await db.Database.MigrateAsync();
 // Console.WriteLine($"DELETE User: {await crud.DeleteUserAsync(userId, token)}");
 // // Потрібен для посилання на Program з конфігурації User Secrets.
 
-var complexQueries = scope.ServiceProvider.GetRequiredService<SqlComplexQueries>();
-await ComplexQueryDemo.RunAsync(complexQueries, CancellationToken.None);
+//5 point 
+// var complexQueries = scope.ServiceProvider.GetRequiredService<SqlComplexQueries>();
+// await ComplexQueryDemo.RunAsync(complexQueries, CancellationToken.None);
+
+await SqlTransactionDemo.RunAsync(connectionString, CancellationToken.None);
 
 public partial class Program;
