@@ -75,6 +75,7 @@ internal sealed class TripConfiguration : IEntityTypeConfiguration<Trip>
         entity.Property(x => x.StartDate).HasColumnType("date").IsRequired();
         entity.Property(x => x.EndDate).HasColumnType("date").IsRequired();
         entity.Property(x => x.Description).HasMaxLength(2000);
+        entity.Property(x => x.PlanningNotes).HasMaxLength(1000);
         entity.Property(x => x.RowVersion).IsRowVersion();
         // Власника не можна видалити, доки на нього посилаються його подорожі.
         entity.HasOne(x => x.Owner).WithMany(x => x.OwnedTrips).HasForeignKey(x => x.OwnerId)

@@ -46,6 +46,8 @@ public sealed class Trip
     public DateOnly EndDate { get; set; }
     // Опис необов'язковий, тому тип допускає null.
     public string? Description { get; set; }
+    // Необов'язкові нотатки планування; довжина обмежується конфігурацією EF Core.
+    public string? PlanningNotes { get; set; }
     // SQL Server змінює це значення при оновленні рядка для виявлення конфліктів запису.
     public byte[] RowVersion { get; set; } = [];
     // Навігаційні властивості для зв'язків EF Core.
