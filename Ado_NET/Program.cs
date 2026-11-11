@@ -16,6 +16,8 @@ var connectionString = builder.Configuration.GetConnectionString("KpzDb")
 // Реєструємо контекст EF Core та SQL Server провайдер у контейнері залежностей.
 builder.Services.AddDbContext<KpzDbContext>(options =>
     options.UseSqlServer(connectionString).UseDevelopmentDataSeeding());
+// Реєструємо ADO.NET CRUD окремо від EF Core, використовуючи той самий рядок підключення.
+builder.Services.AddSingleton(new SqlCrudRepository(connectionString));
 
 using var host = builder.Build();
 using var scope = host.Services.CreateScope();
