@@ -86,6 +86,8 @@ await db.Database.MigrateAsync();
 
 ////////////////////9 point///////////////////
 //await EfLinqQueriesDemo.RunAsync(db, CancellationToken.None);
+////////////////////10 point//////////////////
+//await EfConcurrencyDemo.RunAsync(connectionString, CancellationToken.None);
 
 // Потрібен для посилання на Program з конфігурації User Secrets.
 public partial class Program;
