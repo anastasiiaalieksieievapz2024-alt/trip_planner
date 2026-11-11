@@ -68,12 +68,18 @@ await db.Database.MigrateAsync();
 // // DELETE подорожі, потім користувача
 // Console.WriteLine($"DELETE Trip: {await crud.DeleteTripAsync(tripId, token)}");
 // Console.WriteLine($"DELETE User: {await crud.DeleteUserAsync(userId, token)}");
-// // Потрібен для посилання на Program з конфігурації User Secrets.
 
-//5 point 
+
+/////////////////5 point  ////////////////////
 // var complexQueries = scope.ServiceProvider.GetRequiredService<SqlComplexQueries>();
 // await ComplexQueryDemo.RunAsync(complexQueries, CancellationToken.None);
 
-await SqlTransactionDemo.RunAsync(connectionString, CancellationToken.None);
+////////////////6 point////////////////////////
+//await SqlTransactionDemo.RunAsync(connectionString, CancellationToken.None);
 
+
+//7 point
+// EfModelDemo.Print(db.Model);
+
+// Потрібен для посилання на Program з конфігурації User Secrets.
 public partial class Program;
