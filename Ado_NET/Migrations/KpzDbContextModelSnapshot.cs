@@ -92,10 +92,8 @@ namespace Kpz.Lab2.Migrations
                     b.Property<DateTime>("EndDateTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("ItemType")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)");
+                    b.Property<int>("ItineraryItemTypeId")
+                        .HasColumnType("int");
 
                     b.Property<decimal?>("Latitude")
                         .HasPrecision(9, 6)
@@ -118,12 +116,63 @@ namespace Kpz.Lab2.Migrations
 
                     b.HasKey("ItemId");
 
+                    b.HasIndex("ItineraryItemTypeId");
+
                     b.HasIndex("TripId", "StartDateTime")
                         .HasDatabaseName("IX_ItineraryItems_TripId_StartDateTime");
 
                     b.ToTable("ItineraryItems", null, t =>
                         {
                             t.HasCheckConstraint("CK_ItineraryItems_DateRange", "[EndDateTime] >= [StartDateTime]");
+                        });
+                });
+
+            modelBuilder.Entity("Kpz.Lab2.Models.ItineraryItemType", b =>
+                {
+                    b.Property<int>("ItineraryItemTypeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ItineraryItemTypeId"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.HasKey("ItineraryItemTypeId");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ItineraryItemTypes_Name");
+
+                    b.ToTable("ItineraryItemTypes", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            ItineraryItemTypeId = 1,
+                            Name = "Transport"
+                        },
+                        new
+                        {
+                            ItineraryItemTypeId = 2,
+                            Name = "Accommodation"
+                        },
+                        new
+                        {
+                            ItineraryItemTypeId = 3,
+                            Name = "Transfer"
+                        },
+                        new
+                        {
+                            ItineraryItemTypeId = 4,
+                            Name = "Activity"
+                        },
+                        new
+                        {
+                            ItineraryItemTypeId = 5,
+                            Name = "Meal"
                         });
                 });
 
@@ -159,6 +208,9 @@ namespace Kpz.Lab2.Migrations
                     b.Property<DateOnly>("StartDate")
                         .HasColumnType("date");
 
+                    b.Property<int>("TripCategoryId")
+                        .HasColumnType("int");
+
                     b.Property<string>("TripName")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -169,9 +221,70 @@ namespace Kpz.Lab2.Migrations
                     b.HasIndex("OwnerId")
                         .HasDatabaseName("IX_Trips_OwnerId");
 
+                    b.HasIndex("TripCategoryId");
+
                     b.ToTable("Trips", null, t =>
                         {
                             t.HasCheckConstraint("CK_Trips_DateRange", "[EndDate] >= [StartDate]");
+                        });
+                });
+
+            modelBuilder.Entity("Kpz.Lab2.Models.TripCategory", b =>
+                {
+                    b.Property<int>("TripCategoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TripCategoryId"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.HasKey("TripCategoryId");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("UX_TripCategories_Name");
+
+                    b.ToTable("TripCategories", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            TripCategoryId = 1,
+                            Description = "Коротка подорож до міста",
+                            Name = "City break"
+                        },
+                        new
+                        {
+                            TripCategoryId = 2,
+                            Description = "Відпочинок біля моря або озера",
+                            Name = "Beach"
+                        },
+                        new
+                        {
+                            TripCategoryId = 3,
+                            Description = "Активна подорож і пригоди",
+                            Name = "Adventure"
+                        },
+                        new
+                        {
+                            TripCategoryId = 4,
+                            Description = "Музеї, пам'ятки та культурні події",
+                            Name = "Cultural"
+                        },
+                        new
+                        {
+                            TripCategoryId = 5,
+                            Description = "Подорож для сімейного відпочинку",
+                            Name = "Family"
                         });
                 });
 
@@ -292,6 +405,13 @@ namespace Kpz.Lab2.Migrations
 
             modelBuilder.Entity("Kpz.Lab2.Models.ItineraryItem", b =>
                 {
+                    b.HasOne("Kpz.Lab2.Models.ItineraryItemType", "Type")
+                        .WithMany("Items")
+                        .HasForeignKey("ItineraryItemTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_ItineraryItems_ItineraryItemTypes_ItineraryItemTypeId");
+
                     b.HasOne("Kpz.Lab2.Models.Trip", "Trip")
                         .WithMany("ItineraryItems")
                         .HasForeignKey("TripId")
@@ -300,6 +420,8 @@ namespace Kpz.Lab2.Migrations
                         .HasConstraintName("FK_ItineraryItems_Trips_TripId");
 
                     b.Navigation("Trip");
+
+                    b.Navigation("Type");
                 });
 
             modelBuilder.Entity("Kpz.Lab2.Models.Trip", b =>
@@ -310,6 +432,15 @@ namespace Kpz.Lab2.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_Trips_Users_OwnerId");
+
+                    b.HasOne("Kpz.Lab2.Models.TripCategory", "Category")
+                        .WithMany("Trips")
+                        .HasForeignKey("TripCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_Trips_TripCategories_TripCategoryId");
+
+                    b.Navigation("Category");
 
                     b.Navigation("Owner");
                 });
@@ -352,6 +483,11 @@ namespace Kpz.Lab2.Migrations
                     b.Navigation("Bookings");
                 });
 
+            modelBuilder.Entity("Kpz.Lab2.Models.ItineraryItemType", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("Kpz.Lab2.Models.Trip", b =>
                 {
                     b.Navigation("Documents");
@@ -359,6 +495,11 @@ namespace Kpz.Lab2.Migrations
                     b.Navigation("ItineraryItems");
 
                     b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("Kpz.Lab2.Models.TripCategory", b =>
+                {
+                    b.Navigation("Trips");
                 });
 
             modelBuilder.Entity("Kpz.Lab2.Models.User", b =>

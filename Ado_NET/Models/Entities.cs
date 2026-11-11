@@ -1,5 +1,22 @@
 namespace Kpz.Lab2.Models;
 
+// Довідник категорій для групування та фільтрації подорожей.
+public sealed class TripCategory
+{
+    public int TripCategoryId { get; set; }
+    public required string Name { get; set; }
+    public required string Description { get; set; }
+    public ICollection<Trip> Trips { get; } = new List<Trip>();
+}
+
+// Довідник типів пунктів маршруту: транспорт, проживання, активність тощо.
+public sealed class ItineraryItemType
+{
+    public int ItineraryItemTypeId { get; set; }
+    public required string Name { get; set; }
+    public ICollection<ItineraryItem> Items { get; } = new List<ItineraryItem>();
+}
+
 // Обліковий запис користувача, який може створювати подорожі та долучатися до них.
 public sealed class User
 {
@@ -21,6 +38,8 @@ public sealed class Trip
     public int TripId { get; set; }
     // Зовнішній ключ на користувача-власника.
     public int OwnerId { get; set; }
+    // Зовнішній ключ на довідник категорій.
+    public int TripCategoryId { get; set; }
     public required string TripName { get; set; }
     public required string Destination { get; set; }
     public DateOnly StartDate { get; set; }
@@ -31,6 +50,7 @@ public sealed class Trip
     public byte[] RowVersion { get; set; } = [];
     // Навігаційні властивості для зв'язків EF Core.
     public User Owner { get; set; } = null!;
+    public TripCategory Category { get; set; } = null!;
     public ICollection<TripMember> Members { get; } = new List<TripMember>();
     public ICollection<ItineraryItem> ItineraryItems { get; } = new List<ItineraryItem>();
     public ICollection<TripDocument> Documents { get; } = new List<TripDocument>();
@@ -53,7 +73,8 @@ public sealed class ItineraryItem
 {
     public int ItemId { get; set; }
     public int TripId { get; set; }
-    public required string ItemType { get; set; }
+    // Зовнішній ключ на довідник типів пункту маршруту.
+    public int ItineraryItemTypeId { get; set; }
     public required string Title { get; set; }
     public string? Description { get; set; }
     public DateTime StartDateTime { get; set; }
@@ -63,6 +84,7 @@ public sealed class ItineraryItem
     public decimal? Longitude { get; set; }
     // Пункт належить одній подорожі та може мати кілька бронювань.
     public Trip Trip { get; set; } = null!;
+    public ItineraryItemType Type { get; set; } = null!;
     public ICollection<Booking> Bookings { get; } = new List<Booking>();
 }
 

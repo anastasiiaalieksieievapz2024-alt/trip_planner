@@ -14,7 +14,8 @@ var connectionString = builder.Configuration.GetConnectionString("KpzDb")
     ?? throw new InvalidOperationException("Connection string KpzDb is missing.");
 
 // Реєструємо контекст EF Core та SQL Server провайдер у контейнері залежностей.
-builder.Services.AddDbContext<KpzDbContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddDbContext<KpzDbContext>(options =>
+    options.UseSqlServer(connectionString).UseDevelopmentDataSeeding());
 
 using var host = builder.Build();
 using var scope = host.Services.CreateScope();

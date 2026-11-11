@@ -21,10 +21,9 @@ public sealed class KpzDbContextFactory : IDesignTimeDbContextFactory<KpzDbConte
             ?? throw new InvalidOperationException("Connection string KpzDb is missing.");
 
         // Створюємо контекст із SQL Server провайдером для EF Core tools.
-        var options = new DbContextOptionsBuilder<KpzDbContext>()
-            .UseSqlServer(connectionString)
-            .Options;
+        var optionsBuilder = new DbContextOptionsBuilder<KpzDbContext>();
+        optionsBuilder.UseSqlServer(connectionString).UseDevelopmentDataSeeding();
 
-        return new KpzDbContext(options);
+        return new KpzDbContext(optionsBuilder.Options);
     }
 }

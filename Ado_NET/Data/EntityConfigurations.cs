@@ -4,6 +4,45 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Kpz.Lab2.Data;
 
+// Довідник із фіксованими категоріями подорожей; HasData переносить їх у міграцію.
+internal sealed class TripCategoryConfiguration : IEntityTypeConfiguration<TripCategory>
+{
+    public void Configure(EntityTypeBuilder<TripCategory> entity)
+    {
+        entity.ToTable("TripCategories");
+        entity.HasKey(x => x.TripCategoryId);
+        entity.Property(x => x.TripCategoryId).UseIdentityColumn();
+        entity.Property(x => x.Name).HasMaxLength(80).IsRequired();
+        entity.Property(x => x.Description).HasMaxLength(300).IsRequired();
+        entity.HasIndex(x => x.Name).IsUnique().HasDatabaseName("UX_TripCategories_Name");
+        entity.HasData(
+            new TripCategory { TripCategoryId = 1, Name = "City break", Description = "Коротка подорож до міста" },
+            new TripCategory { TripCategoryId = 2, Name = "Beach", Description = "Відпочинок біля моря або озера" },
+            new TripCategory { TripCategoryId = 3, Name = "Adventure", Description = "Активна подорож і пригоди" },
+            new TripCategory { TripCategoryId = 4, Name = "Cultural", Description = "Музеї, пам'ятки та культурні події" },
+            new TripCategory { TripCategoryId = 5, Name = "Family", Description = "Подорож для сімейного відпочинку" });
+    }
+}
+
+// Довідник типів маршрутних пунктів із фіксованими значеннями через HasData.
+internal sealed class ItineraryItemTypeConfiguration : IEntityTypeConfiguration<ItineraryItemType>
+{
+    public void Configure(EntityTypeBuilder<ItineraryItemType> entity)
+    {
+        entity.ToTable("ItineraryItemTypes");
+        entity.HasKey(x => x.ItineraryItemTypeId);
+        entity.Property(x => x.ItineraryItemTypeId).UseIdentityColumn();
+        entity.Property(x => x.Name).HasMaxLength(40).IsRequired();
+        entity.HasIndex(x => x.Name).IsUnique().HasDatabaseName("UX_ItineraryItemTypes_Name");
+        entity.HasData(
+            new ItineraryItemType { ItineraryItemTypeId = 1, Name = "Transport" },
+            new ItineraryItemType { ItineraryItemTypeId = 2, Name = "Accommodation" },
+            new ItineraryItemType { ItineraryItemTypeId = 3, Name = "Transfer" },
+            new ItineraryItemType { ItineraryItemTypeId = 4, Name = "Activity" },
+            new ItineraryItemType { ItineraryItemTypeId = 5, Name = "Meal" });
+    }
+}
+
 // Налаштування таблиці користувачів: обов'язкові поля та унікальна електронна адреса.
 internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 {
@@ -31,6 +70,8 @@ internal sealed class TripConfiguration : IEntityTypeConfiguration<Trip>
         entity.Property(x => x.TripId).UseIdentityColumn();
         entity.Property(x => x.TripName).HasMaxLength(150).IsRequired();
         entity.Property(x => x.Destination).HasMaxLength(200).IsRequired();
+        entity.HasOne(x => x.Category).WithMany(x => x.Trips).HasForeignKey(x => x.TripCategoryId)
+            .OnDelete(DeleteBehavior.Restrict).HasConstraintName("FK_Trips_TripCategories_TripCategoryId");
         entity.Property(x => x.StartDate).HasColumnType("date").IsRequired();
         entity.Property(x => x.EndDate).HasColumnType("date").IsRequired();
         entity.Property(x => x.Description).HasMaxLength(2000);
@@ -69,7 +110,6 @@ internal sealed class ItineraryItemConfiguration : IEntityTypeConfiguration<Itin
             "CK_ItineraryItems_DateRange", "[EndDateTime] >= [StartDateTime]"));
         entity.HasKey(x => x.ItemId);
         entity.Property(x => x.ItemId).UseIdentityColumn();
-        entity.Property(x => x.ItemType).HasMaxLength(40).IsRequired();
         entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
         entity.Property(x => x.Description).HasMaxLength(2000);
         entity.Property(x => x.StartDateTime).HasColumnType("datetime2").IsRequired();
@@ -79,6 +119,8 @@ internal sealed class ItineraryItemConfiguration : IEntityTypeConfiguration<Itin
         entity.Property(x => x.Longitude).HasPrecision(9, 6);
         entity.HasOne(x => x.Trip).WithMany(x => x.ItineraryItems).HasForeignKey(x => x.TripId)
             .OnDelete(DeleteBehavior.Cascade).HasConstraintName("FK_ItineraryItems_Trips_TripId");
+        entity.HasOne(x => x.Type).WithMany(x => x.Items).HasForeignKey(x => x.ItineraryItemTypeId)
+            .OnDelete(DeleteBehavior.Restrict).HasConstraintName("FK_ItineraryItems_ItineraryItemTypes_ItineraryItemTypeId");
         entity.HasIndex(x => new { x.TripId, x.StartDateTime }).HasDatabaseName("IX_ItineraryItems_TripId_StartDateTime");
     }
 }
