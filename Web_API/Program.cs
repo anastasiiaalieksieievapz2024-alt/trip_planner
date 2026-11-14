@@ -1,4 +1,5 @@
 using Kpz.Lab2.Data;
+using Web_API.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -29,11 +30,19 @@ builder.Services
 
 builder.Services.AddAuthorization(options =>
 {
+    options.AddPolicy(AuthorizationPolicies.ReadTrips, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPolicies.ReadTripsPermission));
+    });
+
     // Everything is private by default. Public endpoints must opt in with [AllowAnonymous].
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build();
 });
+builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, ReadTripHandler>();
 
 var app = builder.Build();
 
@@ -49,6 +58,26 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStatusCodePages(async statusCodeContext =>
+{
+    var response = statusCodeContext.HttpContext.Response;
+    var (error, message) = response.StatusCode switch
+    {
+        StatusCodes.Status401Unauthorized => ("Unauthorized", "Потрібна автентифікація. Передайте дійсний access token."),
+        StatusCodes.Status403Forbidden => ("Forbidden", "Недостатньо дозволів для виконання цього запиту."),
+        StatusCodes.Status404NotFound => ("Not Found", "Ресурс не знайдено або у вас немає до нього доступу."),
+        _ => ("Error", "Запит не вдалося виконати.")
+    };
+
+    response.ContentType = "application/json; charset=utf-8";
+    await response.WriteAsJsonAsync(new
+    {
+        Status = response.StatusCode,
+        Error = error,
+        Message = message,
+        Path = statusCodeContext.HttpContext.Request.Path.Value
+    });
+});
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
