@@ -10,6 +10,11 @@ GET {{Web_API_HostAddress}}/api/test/protected
 Authorization: Bearer {{accessToken}}
 Accept: application/json
 
+### Policy-based endpoint: access token must include the read:trips permission
+GET {{Web_API_HostAddress}}/api/test/planner
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
 ### List trips owned by me or shared with me
 GET {{Web_API_HostAddress}}/api/trips
 Authorization: Bearer {{accessToken}}

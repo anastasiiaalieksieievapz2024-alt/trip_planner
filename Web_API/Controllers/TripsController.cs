@@ -1,4 +1,7 @@
 using Kpz.Lab2.Data;
+using Kpz.Lab2.Models;
+using Web_API.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,7 +10,8 @@ namespace Web_API.Controllers;
 /// <summary>Read-only trip planner endpoints protected by the API's Auth0 access-token policy.</summary>
 [ApiController]
 [Route("api/trips")]
-public sealed class TripsController(KpzDbContext db) : ControllerBase
+[Authorize(Policy = AuthorizationPolicies.ReadTrips)]
+public sealed class TripsController(KpzDbContext db, IAuthorizationService authorizationService) : ControllerBase
 {
     /// <summary>Lists trips owned by or shared with the authenticated planner user.</summary>
     [HttpGet]
@@ -53,10 +57,18 @@ public sealed class TripsController(KpzDbContext db) : ControllerBase
             return NotFound();
         }
 
-        var canRead = await db.Trips.AsNoTracking().AnyAsync(trip => trip.TripId == tripId &&
-            (trip.OwnerId == userId.Value || db.TripMembers.Any(member =>
-                member.TripId == tripId && member.UserId == userId.Value)), cancellationToken);
-        if (!canRead)
+        var trip = await db.Trips.AsNoTracking()
+            .SingleOrDefaultAsync(candidate => candidate.TripId == tripId, cancellationToken);
+        if (trip is null)
+        {
+            return NotFound();
+        }
+
+        var authorization = await authorizationService.AuthorizeAsync(
+            User,
+            trip,
+            new ReadTripRequirement());
+        if (!authorization.Succeeded)
         {
             return NotFound();
         }
@@ -109,9 +121,8 @@ public sealed class TripsController(KpzDbContext db) : ControllerBase
 
     private async Task<int?> ResolvePlannerUserIdAsync(CancellationToken cancellationToken)
     {
-        var email = User.FindFirst("email")?.Value
-            ?? User.FindFirst("preferred_username")?.Value;
-        if (string.IsNullOrWhiteSpace(email))
+        var email = PlannerClaims.GetEmail(User);
+        if (email is null)
         {
             return null;
         }

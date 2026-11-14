@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Web_API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,5 +20,13 @@ public sealed class TestController : ControllerBase
         Message = "Ви успішно пройшли автентифікацію!",
         UserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? User.FindFirst("sub")?.Value
+    });
+
+    [Authorize(Policy = AuthorizationPolicies.ReadTrips)]
+    [HttpGet("planner")]
+    public IActionResult RegisteredPlanner() => Ok(new
+    {
+        Message = "Токен має дозвіл read:trips.",
+        Subject = User.FindFirst("sub")?.Value
     });
 }
