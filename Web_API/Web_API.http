@@ -1,0 +1,22 @@
+@Web_API_HostAddress = https://localhost:7198
+@accessToken = paste-an-auth0-access-token-requested-with-pkce
+
+### Public endpoint: no token required
+GET {{Web_API_HostAddress}}/api/test/public
+Accept: application/json
+
+### Protected endpoint: requires an Auth0 access token for https://trip-planner-api
+GET {{Web_API_HostAddress}}/api/test/protected
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### List trips owned by me or shared with me
+GET {{Web_API_HostAddress}}/api/trips
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### Read the chronological route for a trip
+GET {{Web_API_HostAddress}}/api/trips/1/itinerary
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
