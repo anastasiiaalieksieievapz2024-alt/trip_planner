@@ -3,11 +3,16 @@ using Web_API.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+    options.AddOperationTransformer<BearerOperationSecurityTransformer>();
+});
 
 var auth0Domain = builder.Configuration["Auth0:Domain"]
     ?? throw new InvalidOperationException("Auth0:Domain must be configured.");
@@ -54,7 +59,11 @@ await using (var scope = app.Services.CreateAsyncScope())
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
+    app.MapScalarApiReference(options => options
+        .WithTitle("Trip Planner API")
+        .AddPreferredSecuritySchemes("Bearer"))
+        .AllowAnonymous();
 }
 
 app.UseHttpsRedirection();
