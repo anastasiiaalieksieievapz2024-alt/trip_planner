@@ -1,5 +1,6 @@
 using Kpz.Lab2.Data;
 using Web_API.Authorization;
+using Web_API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +22,9 @@ var audience = builder.Configuration["Auth0:Audience"]
 var connectionString = builder.Configuration.GetConnectionString("KpzDb")
     ?? throw new InvalidOperationException("Connection string KpzDb must be configured.");
 
+// DbContext і сервіс поїздок мають один scope запиту; сервіс використовує цей контекст.
 builder.Services.AddDbContext<KpzDbContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddScoped<ITripService, TripService>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -51,7 +54,9 @@ builder.Services.AddAuthorization(options =>
         .RequireAuthenticatedUser()
         .Build();
 });
-builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+// Перевіряє лише claims і не зберігає стан чи scoped-залежності, тому може бути singleton.
+builder.Services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
+// Читає власника/учасника з бази через scoped DbContext, тому має lifetime scoped.
 builder.Services.AddScoped<IAuthorizationHandler, ReadTripHandler>();
 
 var app = builder.Build();
