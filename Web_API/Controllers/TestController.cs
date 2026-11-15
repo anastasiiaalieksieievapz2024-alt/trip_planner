@@ -18,6 +18,10 @@ public sealed class TestController : ControllerBase
     [HttpGet("public")]
     [ProducesResponseType<string>(StatusCodes.Status200OK, Description = "Повідомлення про доступність API.")]
     public IActionResult Public() => Ok("Цей ресурс доступний усім.");
+// public IActionResult Public()
+// {
+//     throw new InvalidOperationException("SECRET_TEST_EXCEPTION");
+// }
 
     /// <summary>Повертає ідентифікатор автентифікованого користувача Auth0.</summary>
     /// <response code="200">Токен дійсний; повертається ідентифікатор користувача.</response>

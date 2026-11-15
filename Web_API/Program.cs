@@ -1,6 +1,7 @@
 using Kpz.Lab2.Data;
 using Web_API.Authorization;
 using Web_API.Services;
+using Web_API.ErrorHandling;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,8 @@ using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi(options =>
 {
     options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
@@ -122,7 +125,8 @@ if (app.Environment.IsDevelopment())
         .AddPreferredSecuritySchemes("Bearer"))
         .AllowAnonymous();
 }
-
+//Перехоплення необроблених винятків та повернення безпечної відповіді клієнту
+app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseStatusCodePages(async statusCodeContext =>
 {
