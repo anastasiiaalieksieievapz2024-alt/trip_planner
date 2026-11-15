@@ -16,3 +16,5 @@ public sealed record AuthenticatedUserResponse(string Message, string? UserId);
 /// <param name="Message">Повідомлення про наявність дозволу.</param>
 /// <param name="Subject">Ідентифікатор суб'єкта з access token.</param>
 public sealed record PlannerPermissionResponse(string Message, string? Subject);
+
+

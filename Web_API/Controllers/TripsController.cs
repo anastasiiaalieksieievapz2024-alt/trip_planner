@@ -19,13 +19,32 @@ public sealed class TripsController(ITripService tripService) : ControllerBase
     /// <response code="403">Токен не містить дозволу <c>read:trips</c>.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicies.ReadTrips)]
-    [ProducesResponseType<IReadOnlyList<TripListItem>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<IReadOnlyList<TripReadDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized, Description = "Потрібна автентифікація.")]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden, Description = "У токені немає дозволу read:trips.")]
-    public async Task<ActionResult<IReadOnlyList<TripListItem>>> GetTrips(CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<TripReadDto>>> GetTrips(CancellationToken cancellationToken)
     {
         var trips = await tripService.GetTripsAsync(User, cancellationToken);
         return Ok(trips);
+    }
+
+    /// <summary>Повертає деталі поїздки для власника або учасника.</summary>
+    /// <param name="tripId">Ідентифікатор поїздки.</param>
+    /// <param name="cancellationToken">Токен скасування запиту.</param>
+    /// <response code="200">Поїздку знайдено.</response>
+    /// <response code="401">Токен відсутній або недійсний.</response>
+    /// <response code="403">Немає дозволу read:trips.</response>
+    /// <response code="404">Поїздки немає або користувач не має доступу.</response>
+    [HttpGet("{tripId:int}")]
+    [Authorize(Policy = AuthorizationPolicies.ReadTrips)]
+    [ProducesResponseType<TripReadDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TripReadDto>> GetTrip(int tripId, CancellationToken cancellationToken)
+    {
+        var trip = await tripService.GetTripAsync(User, tripId, cancellationToken);
+        return trip is null ? NotFound() : Ok(trip);
     }
 
     /// <summary>Повертає хронологічний маршрут і підтвердження бронювань, якщо користувач має доступ до поїздки.</summary>
@@ -33,15 +52,15 @@ public sealed class TripsController(ITripService tripService) : ControllerBase
     /// <param name="cancellationToken">Токен для скасування запиту до сервісу.</param>
     /// <response code="200">Повертає маршрут поїздки та підтвердження бронювань.</response>
     /// <response code="401">Токен відсутній, недійсний або прострочений.</response>
-    /// <response code="403">Токен не містить дозволу <c>read:trips</c>.</response>
+    /// <response code="403">Токен не містить дозволу <c>read:itinerary</c>.</response>
     /// <response code="404">Поїздку не знайдено або користувач не має до неї доступу.</response>
     [HttpGet("{tripId:int}/itinerary")]
-    [Authorize(Policy = AuthorizationPolicies.ReadTrips)]
-    [ProducesResponseType<IReadOnlyList<RouteStop>>(StatusCodes.Status200OK)]
+    [Authorize(Policy = AuthorizationPolicies.ReadItinerary)]
+    [ProducesResponseType<IReadOnlyList<ItineraryItemReadDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized, Description = "Потрібна автентифікація.")]
-    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden, Description = "У токені немає дозволу read:trips.")]
+    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden, Description = "У токені немає дозволу read:itinerary.")]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status404NotFound, Description = "Поїздку не знайдено або користувач не має до неї доступу.")]
-    public async Task<ActionResult<IReadOnlyList<RouteStop>>> GetItinerary(
+    public async Task<ActionResult<IReadOnlyList<ItineraryItemReadDto>>> GetItinerary(
         int tripId,
         CancellationToken cancellationToken)
     {
@@ -60,13 +79,13 @@ public sealed class TripsController(ITripService tripService) : ControllerBase
     [HttpPost]
     [Authorize(Policy = AuthorizationPolicies.CreateTrips)]
     [Consumes("application/json")]
-    [ProducesResponseType<TripCreatedResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<TripReadDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized, Description = "Потрібна автентифікація.")]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden, Description = "У токені немає дозволу create:trips.")]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status415UnsupportedMediaType, Description = "Надішліть тіло запиту з Content-Type: application/json.")]
-    public async Task<ActionResult<TripCreatedResponse>> CreateTrip(
-        [FromBody] CreateTripRequest request,
+    public async Task<ActionResult<TripReadDto>> CreateTrip(
+        [FromBody] CreateTripDto request,
         CancellationToken cancellationToken)
     {
         var result = await tripService.CreateTripAsync(User, request, cancellationToken);
@@ -84,4 +103,67 @@ public sealed class TripsController(ITripService tripService) : ControllerBase
         var trip = result.Trip!;
         return CreatedAtAction(nameof(GetItinerary), new { tripId = trip.TripId }, trip);
     }
+
+    /// <summary>Оновлює поїздку, якщо автентифікований користувач є її власником.</summary>
+    /// <param name="tripId">Ідентифікатор поїздки.</param>
+    /// <param name="request">Нові дані поїздки у форматі JSON.</param>
+    /// <param name="cancellationToken">Токен скасування запиту.</param>
+    /// <response code="200">Дані поїздки оновлено.</response>
+    /// <response code="400">Дані запиту або категорія не пройшли перевірку.</response>
+    /// <response code="401">Токен відсутній або недійсний.</response>
+    /// <response code="403">Немає дозволу update:trips.</response>
+    /// <response code="404">Поїздки немає або поточний користувач не є власником.</response>
+    [HttpPut("{tripId:int}")]
+    [Authorize(Policy = AuthorizationPolicies.UpdateTrips)]
+    [Consumes("application/json")]
+    [ProducesResponseType<TripReadDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TripReadDto>> UpdateTrip(
+        int tripId,
+        [FromBody] UpdateTripDto request,
+        CancellationToken cancellationToken)
+    {
+        var result = await tripService.UpdateTripAsync(User, tripId, request, cancellationToken);
+        if (result.Status == TripMutationStatus.PlannerAccountNotFound)
+        {
+            return Forbid();
+        }
+
+        if (result.Status == TripMutationStatus.TripNotFound)
+        {
+            return NotFound();
+        }
+
+        if (result.Status == TripMutationStatus.CategoryNotFound)
+        {
+            ModelState.AddModelError(nameof(request.TripCategoryId), "Категорію поїздки не знайдено.");
+            return ValidationProblem(ModelState);
+        }
+
+        return Ok(result.Trip);
+    }
+
+    /// <summary>Видаляє поїздку, якщо автентифікований користувач є її власником.</summary>
+    /// <param name="tripId">Ідентифікатор поїздки.</param>
+    /// <param name="cancellationToken">Токен скасування запиту.</param>
+    /// <response code="204">Поїздку видалено.</response>
+    /// <response code="401">Токен відсутній або недійсний.</response>
+    /// <response code="403">Немає дозволу delete:trips.</response>
+    /// <response code="404">Поїздки немає або поточний користувач не є власником.</response>
+    [HttpDelete("{tripId:int}")]
+    [Authorize(Policy = AuthorizationPolicies.DeleteTrips)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteTrip(int tripId, CancellationToken cancellationToken)
+    {
+        var deleted = await tripService.DeleteTripAsync(User, tripId, cancellationToken);
+        return deleted ? NoContent() : NotFound();
+    }
 }
+
+

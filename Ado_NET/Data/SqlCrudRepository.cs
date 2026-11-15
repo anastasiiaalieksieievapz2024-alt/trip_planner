@@ -3,7 +3,7 @@ using Microsoft.Data.SqlClient;
 
 namespace Kpz.Lab2.Data;
 
-/// <summary>Користувач, прочитаний безпосередньо через SqlDataReader.</summary>
+/// <summary>����������, ���������� ������������� ����� SqlDataReader.</summary>
 public sealed record UserRecord(
     int UserId,
     string FullName,
@@ -11,7 +11,7 @@ public sealed record UserRecord(
     string PasswordHash,
     DateTime CreatedAt);
 
-/// <summary>Подорож разом із власником і назвою її категорії.</summary>
+/// <summary>������� ����� �� ��������� � ������ �� �������.</summary>
 public sealed record TripRecord(
     int TripId,
     int OwnerId,
@@ -26,8 +26,8 @@ public sealed record TripRecord(
     string CategoryName);
 
 /// <summary>
-/// Асинхронний ADO.NET CRUD для пов'язаних таблиць dbo.Users і dbo.Trips.
-/// Усі значення передаються як SQL-параметри, а читання виконується через SqlDataReader.
+/// ����������� ADO.NET CRUD ��� ���'������ ������� dbo.Users � dbo.Trips.
+/// �� �������� ����������� �� SQL-���������, � ������� ���������� ����� SqlDataReader.
 /// </summary>
 public sealed class SqlCrudRepository(string connectionString)
 {

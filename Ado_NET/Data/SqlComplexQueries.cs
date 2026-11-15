@@ -3,7 +3,7 @@ using Microsoft.Data.SqlClient;
 
 namespace Kpz.Lab2.Data;
 
-/// <summary>Рядок результату запиту про подорожі та їхні маршрутні пункти.</summary>
+/// <summary>����� ���������� ������ ��� ������� �� ��� �������� ������.</summary>
 public sealed record TripItineraryRow(
     int TripId,
     string TripName,
@@ -17,7 +17,7 @@ public sealed record TripItineraryRow(
     string? ItemType,
     DateTime? ItemStartDateTime);
 
-/// <summary>Підсумок кількості подорожей і бронювань за категорією та напрямком.</summary>
+/// <summary>ϳ������ ������� ��������� � ��������� �� �������� �� ���������.</summary>
 public sealed record TripBookingSummaryRow(
     string CategoryName,
     string Destination,
@@ -26,16 +26,16 @@ public sealed record TripBookingSummaryRow(
     decimal TotalBookingAmount);
 
 /// <summary>
-/// Складні параметризовані SQL-запити для демонстрації JOIN та GROUP BY через ADO.NET.
+/// ������ �������������� SQL-������ ��� ������������ JOIN �� GROUP BY ����� ADO.NET.
 /// </summary>
 public sealed class SqlComplexQueries(string connectionString)
 {
     private readonly string _connectionString = connectionString;
 
     /// <summary>
-    /// Повертає подорожі з власниками, категоріями та пунктами маршруту.
-    /// Фільтрує за періодом початку подорожі й необов'язково за категорією;
-    /// результат сортує за датою, назвою подорожі та часом пункту маршруту.
+    /// ������� ������� � ����������, ���������� �� �������� ��������.
+    /// Գ����� �� ������� ������� ������� � ������'������ �� ��������;
+    /// ��������� ����� �� �����, ������ ������� �� ����� ������ ��������.
     /// </summary>
     public async Task<IReadOnlyList<TripItineraryRow>> GetTripsWithItineraryAsync(
         DateOnly fromDate,

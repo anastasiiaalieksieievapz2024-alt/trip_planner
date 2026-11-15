@@ -25,6 +25,8 @@ var connectionString = builder.Configuration.GetConnectionString("KpzDb")
 // DbContext і сервіс поїздок мають один scope запиту; сервіс використовує цей контекст.
 builder.Services.AddDbContext<KpzDbContext>(options => options.UseSqlServer(connectionString));
 builder.Services.AddScoped<ITripService, TripService>();
+builder.Services.AddScoped<IItineraryItemService, ItineraryItemService>();
+builder.Services.AddScoped<ITripMemberService, TripMemberService>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -47,6 +49,51 @@ builder.Services.AddAuthorization(options =>
     {
         policy.RequireAuthenticatedUser();
         policy.AddRequirements(new PermissionRequirement(AuthorizationPolicies.CreateTripsPermission));
+    });
+    options.AddPolicy(AuthorizationPolicies.UpdateTrips, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPolicies.UpdateTripsPermission));
+    });
+    options.AddPolicy(AuthorizationPolicies.DeleteTrips, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPolicies.DeleteTripsPermission));
+    });
+    options.AddPolicy(AuthorizationPolicies.ReadItinerary, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPolicies.ReadItineraryPermission));
+    });
+    options.AddPolicy(AuthorizationPolicies.CreateItinerary, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPolicies.CreateItineraryPermission));
+    });
+    options.AddPolicy(AuthorizationPolicies.UpdateItinerary, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPolicies.UpdateItineraryPermission));
+    });
+    options.AddPolicy(AuthorizationPolicies.DeleteItinerary, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPolicies.DeleteItineraryPermission));
+    });
+    options.AddPolicy(AuthorizationPolicies.ReadMembers, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPolicies.ReadMembersPermission));
+    });
+    options.AddPolicy(AuthorizationPolicies.CreateMembers, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPolicies.CreateMembersPermission));
+    });
+    options.AddPolicy(AuthorizationPolicies.DeleteMembers, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPolicies.DeleteMembersPermission));
     });
 
     // Everything is private by default. Public endpoints must opt in with [AllowAnonymous].
@@ -104,3 +151,5 @@ app.MapControllers();
 app.Run();
 
 public partial class Program;
+
+

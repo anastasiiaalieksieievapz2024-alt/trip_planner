@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Kpz.Lab2.Data;
 
-// Довідник із фіксованими категоріями подорожей; HasData переносить їх у міграцію.
+// ������� �� ���������� ���������� ���������; HasData ���������� �� � �������.
 internal sealed class TripCategoryConfiguration : IEntityTypeConfiguration<TripCategory>
 {
     public void Configure(EntityTypeBuilder<TripCategory> entity)
@@ -16,15 +16,15 @@ internal sealed class TripCategoryConfiguration : IEntityTypeConfiguration<TripC
         entity.Property(x => x.Description).HasMaxLength(300).IsRequired();
         entity.HasIndex(x => x.Name).IsUnique().HasDatabaseName("UX_TripCategories_Name");
         entity.HasData(
-            new TripCategory { TripCategoryId = 1, Name = "City break", Description = "Коротка подорож до міста" },
-            new TripCategory { TripCategoryId = 2, Name = "Beach", Description = "Відпочинок біля моря або озера" },
-            new TripCategory { TripCategoryId = 3, Name = "Adventure", Description = "Активна подорож і пригоди" },
-            new TripCategory { TripCategoryId = 4, Name = "Cultural", Description = "Музеї, пам'ятки та культурні події" },
-            new TripCategory { TripCategoryId = 5, Name = "Family", Description = "Подорож для сімейного відпочинку" });
+            new TripCategory { TripCategoryId = 1, Name = "City break", Description = "������� ������� �� ����" },
+            new TripCategory { TripCategoryId = 2, Name = "Beach", Description = "³�������� ��� ���� ��� �����" },
+            new TripCategory { TripCategoryId = 3, Name = "Adventure", Description = "������� ������� � �������" },
+            new TripCategory { TripCategoryId = 4, Name = "Cultural", Description = "����, ���'���� �� �������� ��䳿" },
+            new TripCategory { TripCategoryId = 5, Name = "Family", Description = "������� ��� �������� ���������" });
     }
 }
 
-// Довідник типів маршрутних пунктів із фіксованими значеннями через HasData.
+// ������� ���� ���������� ������ �� ���������� ���������� ����� HasData.
 internal sealed class ItineraryItemTypeConfiguration : IEntityTypeConfiguration<ItineraryItemType>
 {
     public void Configure(EntityTypeBuilder<ItineraryItemType> entity)
@@ -43,7 +43,7 @@ internal sealed class ItineraryItemTypeConfiguration : IEntityTypeConfiguration<
     }
 }
 
-// Налаштування таблиці користувачів: обов'язкові поля та унікальна електронна адреса.
+// ������������ ������� ������������: ����'����� ���� �� �������� ���������� ������.
 internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 {
     public void Configure(EntityTypeBuilder<User> entity)
@@ -54,13 +54,13 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         entity.Property(x => x.FullName).HasMaxLength(150).IsRequired();
         entity.Property(x => x.Email).HasMaxLength(254).IsRequired();
         entity.Property(x => x.PasswordHash).HasMaxLength(512).IsRequired();
-        // Якщо час створення не задано, SQL Server поставить поточний UTC час.
+        // ���� ��� ��������� �� ������, SQL Server ��������� �������� UTC ���.
         entity.Property(x => x.CreatedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
         entity.HasIndex(x => x.Email).IsUnique().HasDatabaseName("UX_Users_Email");
     }
 }
 
-// Налаштування подорожей, включно з перевіркою дат, власником і concurrency token.
+// ������������ ���������, ������� � ��������� ���, ��������� � concurrency token.
 internal sealed class TripConfiguration : IEntityTypeConfiguration<Trip>
 {
     public void Configure(EntityTypeBuilder<Trip> entity)
@@ -77,14 +77,14 @@ internal sealed class TripConfiguration : IEntityTypeConfiguration<Trip>
         entity.Property(x => x.Description).HasMaxLength(2000);
         entity.Property(x => x.PlanningNotes).HasMaxLength(1000);
         entity.Property(x => x.RowVersion).IsRowVersion();
-        // Власника не можна видалити, доки на нього посилаються його подорожі.
+        // �������� �� ����� ��������, ���� �� ����� ����������� ���� �������.
         entity.HasOne(x => x.Owner).WithMany(x => x.OwnedTrips).HasForeignKey(x => x.OwnerId)
             .OnDelete(DeleteBehavior.Restrict).HasConstraintName("FK_Trips_Users_OwnerId");
         entity.HasIndex(x => x.OwnerId).HasDatabaseName("IX_Trips_OwnerId");
     }
 }
 
-// Налаштування зв'язувальної таблиці учасників з комбінованим ключем.
+// ������������ ��'��������� ������� �������� � ����������� ������.
 internal sealed class TripMemberConfiguration : IEntityTypeConfiguration<TripMember>
 {
     public void Configure(EntityTypeBuilder<TripMember> entity)
@@ -93,7 +93,7 @@ internal sealed class TripMemberConfiguration : IEntityTypeConfiguration<TripMem
         entity.HasKey(x => new { x.TripId, x.UserId });
         entity.Property(x => x.Role).HasMaxLength(30).IsRequired();
         entity.Property(x => x.JoinedAt).HasColumnType("datetime2").HasDefaultValueSql("SYSUTCDATETIME()");
-        // Видалення подорожі прибирає її членства; користувача з членствами видалити не можна.
+        // ��������� ������� ������� �� ��������; ����������� � ���������� �������� �� �����.
         entity.HasOne(x => x.Trip).WithMany(x => x.Members).HasForeignKey(x => x.TripId)
             .OnDelete(DeleteBehavior.Cascade).HasConstraintName("FK_TripMembers_Trips_TripId");
         entity.HasOne(x => x.User).WithMany(x => x.TripMemberships).HasForeignKey(x => x.UserId)
@@ -102,7 +102,7 @@ internal sealed class TripMemberConfiguration : IEntityTypeConfiguration<TripMem
     }
 }
 
-// Пункти маршруту мають часовий інтервал, координати та належать одній подорожі.
+// ������ �������� ����� ������� ��������, ���������� �� �������� ���� �������.
 internal sealed class ItineraryItemConfiguration : IEntityTypeConfiguration<ItineraryItem>
 {
     public void Configure(EntityTypeBuilder<ItineraryItem> entity)
@@ -126,7 +126,7 @@ internal sealed class ItineraryItemConfiguration : IEntityTypeConfiguration<Itin
     }
 }
 
-// Бронювання має невід'ємну ціну та належить пункту маршруту.
+// ���������� �� ����'���� ���� �� �������� ������ ��������.
 internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
 {
     public void Configure(EntityTypeBuilder<Booking> entity)
@@ -147,7 +147,7 @@ internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
     }
 }
 
-// Документи належать подорожі; шлях до файлу зберігається як текстове поле.
+// ��������� �������� �������; ���� �� ����� ���������� �� �������� ����.
 internal sealed class TripDocumentConfiguration : IEntityTypeConfiguration<TripDocument>
 {
     public void Configure(EntityTypeBuilder<TripDocument> entity)

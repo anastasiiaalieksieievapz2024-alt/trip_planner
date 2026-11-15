@@ -1,4 +1,4 @@
-using Web_API.Contracts;
+﻿using Web_API.Contracts;
 
 namespace Web_API.Services;
 
@@ -9,4 +9,16 @@ public enum TripCreationStatus
     CategoryNotFound
 }
 
-public sealed record TripCreationResult(TripCreationStatus Status, TripCreatedResponse? Trip);
+public sealed record TripCreationResult(TripCreationStatus Status, TripReadDto? Trip);
+
+public enum TripMutationStatus
+{
+    Updated,
+    PlannerAccountNotFound,
+    TripNotFound,
+    CategoryNotFound
+}
+
+public sealed record TripMutationResult(TripMutationStatus Status, TripReadDto? Trip);
+
+
