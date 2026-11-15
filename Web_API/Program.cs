@@ -40,6 +40,11 @@ builder.Services.AddAuthorization(options =>
         policy.RequireAuthenticatedUser();
         policy.AddRequirements(new PermissionRequirement(AuthorizationPolicies.ReadTripsPermission));
     });
+    options.AddPolicy(AuthorizationPolicies.CreateTrips, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new PermissionRequirement(AuthorizationPolicies.CreateTripsPermission));
+    });
 
     // Everything is private by default. Public endpoints must opt in with [AllowAnonymous].
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
