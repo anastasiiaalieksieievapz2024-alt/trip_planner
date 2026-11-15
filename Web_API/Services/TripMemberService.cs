@@ -3,21 +3,22 @@ using Kpz.Lab2.Data;
 using Kpz.Lab2.Models;
 using Web_API.Authorization;
 using Web_API.Contracts;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Web_API.Mappings;
 
 namespace Web_API.Services;
 
 /// <summary>Керує членством користувачів у поїздках і перевіряє права власника.</summary>
-public sealed class TripMemberService(KpzDbContext db, IAuthorizationService authorizationService) : ITripMemberService
+public sealed class TripMemberService(KpzDbContext db) : ITripMemberService
 {
     public async Task<PagedResult<TripMemberReadDto>?> GetMembersAsync(
         ClaimsPrincipal user, int tripId, TripMemberCollectionQuery query, CancellationToken cancellationToken)
     {
-        var trip = await db.Trips.AsNoTracking()
-            .SingleOrDefaultAsync(candidate => candidate.TripId == tripId, cancellationToken);
-        if (trip is null || !(await authorizationService.AuthorizeAsync(user, trip, new ReadTripRequirement())).Succeeded)
+        var email = PlannerClaims.GetEmail(user);
+        if (email is null || !await db.Trips.AsNoTracking().AnyAsync(trip =>
+                trip.TripId == tripId &&
+                (trip.Owner.Email == email || trip.Members.Any(member => member.User.Email == email)),
+                cancellationToken))
         {
             return null;
         }

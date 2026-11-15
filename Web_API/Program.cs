@@ -1,3 +1,5 @@
+using System.IO.Compression;
+using Web_API.Caching;
 using Kpz.Lab2.Data;
 using Web_API.Authorization;
 using Web_API.Services;
@@ -5,11 +7,25 @@ using Web_API.ErrorHandling;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.AspNetCore.ResponseCompression;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+    options.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+    options.Level = CompressionLevel.Fastest);
+builder.Services.AddOutputCache(options =>
+    options.AddPolicy("UserScopedRead", new UserScopedReadCachePolicy()));
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi(options =>
@@ -127,6 +143,7 @@ if (app.Environment.IsDevelopment())
 }
 //Перехоплення необроблених винятків та повернення безпечної відповіді клієнту
 app.UseExceptionHandler();
+app.UseResponseCompression();
 app.UseHttpsRedirection();
 app.UseStatusCodePages(async statusCodeContext =>
 {
@@ -150,6 +167,7 @@ app.UseStatusCodePages(async statusCodeContext =>
 });
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseOutputCache();
 app.MapControllers();
 
 app.Run();

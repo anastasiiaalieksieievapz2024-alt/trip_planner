@@ -3,6 +3,7 @@ using Web_API.Contracts;
 using Web_API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace Web_API.Controllers;
 
@@ -10,8 +11,10 @@ namespace Web_API.Controllers;
 [ApiController]
 [Route("api/trips")]
 [Produces("application/json")]
-public sealed class TripsController(ITripService tripService) : ControllerBase
+public sealed class TripsController(ITripService tripService, IOutputCacheStore outputCacheStore) : ControllerBase
 {
+    private const string ReadCacheTag = "trip-api";
+
     /// <summary>Повертає поїздки, якими володіє користувач або до яких його додано як учасника.</summary>
     /// <param name="query">Параметри сторінки, фільтрації та сортування.</param>
     /// <param name="cancellationToken">Токен для скасування запиту до сервісу.</param>
@@ -20,6 +23,7 @@ public sealed class TripsController(ITripService tripService) : ControllerBase
     /// <response code="403">Токен не містить дозволу <c>read:trips</c>.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicies.ReadTrips)]
+    [OutputCache(PolicyName = "UserScopedRead", Tags = new[] { ReadCacheTag })]
     [ProducesResponseType<PagedResult<TripReadDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized, Description = "Потрібна автентифікація.")]
@@ -40,6 +44,7 @@ public sealed class TripsController(ITripService tripService) : ControllerBase
     /// <response code="404">Поїздки немає або користувач не має доступу.</response>
     [HttpGet("{tripId:int}")]
     [Authorize(Policy = AuthorizationPolicies.ReadTrips)]
+    [OutputCache(PolicyName = "UserScopedRead", Tags = new[] { ReadCacheTag })]
     [ProducesResponseType<TripReadDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden)]
@@ -60,6 +65,7 @@ public sealed class TripsController(ITripService tripService) : ControllerBase
     /// <response code="404">Поїздку не знайдено або користувач не має до неї доступу.</response>
     [HttpGet("{tripId:int}/itinerary")]
     [Authorize(Policy = AuthorizationPolicies.ReadItinerary)]
+    [OutputCache(PolicyName = "UserScopedRead", Tags = new[] { ReadCacheTag })]
     [ProducesResponseType<PagedResult<ItineraryItemReadDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized, Description = "Потрібна автентифікація.")]
@@ -107,6 +113,7 @@ public sealed class TripsController(ITripService tripService) : ControllerBase
         }
 
         var trip = result.Trip!;
+        await outputCacheStore.EvictByTagAsync(ReadCacheTag, cancellationToken);
         return CreatedAtAction(nameof(GetTrip), new { tripId = trip.TripId }, trip);
     }
 
@@ -149,6 +156,7 @@ public sealed class TripsController(ITripService tripService) : ControllerBase
             return ValidationProblem(ModelState);
         }
 
+        await outputCacheStore.EvictByTagAsync(ReadCacheTag, cancellationToken);
         return Ok(result.Trip);
     }
 
@@ -168,6 +176,10 @@ public sealed class TripsController(ITripService tripService) : ControllerBase
     public async Task<IActionResult> DeleteTrip(int tripId, CancellationToken cancellationToken)
     {
         var deleted = await tripService.DeleteTripAsync(User, tripId, cancellationToken);
+        if (deleted)
+        {
+            await outputCacheStore.EvictByTagAsync(ReadCacheTag, cancellationToken);
+        }
         return deleted ? NoContent() : NotFound();
     }
 }

@@ -3,6 +3,7 @@ using Web_API.Contracts;
 using Web_API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace Web_API.Controllers;
 
@@ -10,8 +11,10 @@ namespace Web_API.Controllers;
 [ApiController]
 [Route("api/trips/{tripId:int}/members")]
 [Produces("application/json")]
-public sealed class TripMembersController(ITripMemberService memberService) : ControllerBase
+public sealed class TripMembersController(ITripMemberService memberService, IOutputCacheStore outputCacheStore) : ControllerBase
 {
+    private const string ReadCacheTag = "trip-api";
+
     /// <summary>Повертає учасників поїздки для її власника або учасника з правом читання.</summary>
     /// <param name="tripId">Ідентифікатор поїздки.</param>
     /// <param name="query">Параметри сторінки, фільтрації та сортування.</param>
@@ -22,6 +25,7 @@ public sealed class TripMembersController(ITripMemberService memberService) : Co
     /// <response code="404">Поїздки немає або користувач не має до неї доступу.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicies.ReadMembers)]
+    [OutputCache(PolicyName = "UserScopedRead", Tags = new[] { ReadCacheTag })]
     [ProducesResponseType<PagedResult<TripMemberReadDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized)]
@@ -74,6 +78,7 @@ public sealed class TripMembersController(ITripMemberService memberService) : Co
         }
 
         var member = result.Member!;
+        await outputCacheStore.EvictByTagAsync(ReadCacheTag, cancellationToken);
         return CreatedAtAction(nameof(GetMembers), new { tripId }, member);
     }
 
@@ -95,6 +100,10 @@ public sealed class TripMembersController(ITripMemberService memberService) : Co
         int tripId, int userId, CancellationToken cancellationToken)
     {
         var deleted = await memberService.DeleteMemberAsync(User, tripId, userId, cancellationToken);
+        if (deleted)
+        {
+            await outputCacheStore.EvictByTagAsync(ReadCacheTag, cancellationToken);
+        }
         return deleted ? NoContent() : NotFound();
     }
 }

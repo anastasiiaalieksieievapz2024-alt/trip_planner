@@ -3,14 +3,13 @@ using Kpz.Lab2.Data;
 using Kpz.Lab2.Models;
 using Web_API.Authorization;
 using Web_API.Contracts;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Web_API.Mappings;
 
 namespace Web_API.Services;
 
 /// <summary>Реалізує бізнес-правила читання, авторизації та створення поїздок.</summary>
-public sealed class TripService(KpzDbContext db, IAuthorizationService authorizationService) : ITripService
+public sealed class TripService(KpzDbContext db) : ITripService
 {
     public async Task<PagedResult<TripReadDto>> GetTripsAsync(
         ClaimsPrincipal user,
@@ -65,15 +64,25 @@ public sealed class TripService(KpzDbContext db, IAuthorizationService authoriza
         int tripId,
         CancellationToken cancellationToken)
     {
-        var trip = await db.Trips.AsNoTracking()
-            .Include(candidate => candidate.Category)
-            .SingleOrDefaultAsync(candidate => candidate.TripId == tripId, cancellationToken);
-        if (trip is null || !await CanReadTripAsync(user, trip, cancellationToken))
+        var email = PlannerClaims.GetEmail(user);
+        if (email is null)
         {
             return null;
         }
 
-        return DomainDtoMapper.ToReadDto(trip);
+        return await db.Trips.AsNoTracking()
+            .Where(trip => trip.TripId == tripId &&
+                (trip.Owner.Email == email || trip.Members.Any(member => member.User.Email == email)))
+            .Select(trip => new TripReadDto(
+                trip.TripId,
+                trip.TripName,
+                trip.Destination,
+                trip.StartDate,
+                trip.EndDate,
+                trip.Description,
+                trip.TripCategoryId,
+                trip.Category.Name))
+            .SingleOrDefaultAsync(cancellationToken);
     }
 
     public async Task<PagedResult<ItineraryItemReadDto>?> GetItineraryAsync(
@@ -82,24 +91,17 @@ public sealed class TripService(KpzDbContext db, IAuthorizationService authoriza
         ItineraryCollectionQuery query,
         CancellationToken cancellationToken)
     {
-        var userId = await ResolvePlannerUserIdAsync(user, cancellationToken);
-        if (userId is null)
+        var email = PlannerClaims.GetEmail(user);
+        if (email is null)
         {
             return null;
         }
 
-        var trip = await db.Trips.AsNoTracking()
-            .SingleOrDefaultAsync(candidate => candidate.TripId == tripId, cancellationToken);
-        if (trip is null)
-        {
-            return null;
-        }
-
-        var authorization = await authorizationService.AuthorizeAsync(
-            user,
-            trip,
-            new ReadTripRequirement());
-        if (!authorization.Succeeded)
+        var canRead = await db.Trips.AsNoTracking().AnyAsync(trip =>
+            trip.TripId == tripId &&
+            (trip.Owner.Email == email || trip.Members.Any(member => member.User.Email == email)),
+            cancellationToken);
+        if (!canRead)
         {
             return null;
         }
@@ -250,17 +252,6 @@ public sealed class TripService(KpzDbContext db, IAuthorizationService authoriza
         db.Trips.Remove(trip);
         await db.SaveChangesAsync(cancellationToken);
         return true;
-    }
-
-    private async Task<bool> CanReadTripAsync(ClaimsPrincipal user, Trip trip, CancellationToken cancellationToken)
-    {
-        if (await ResolvePlannerUserIdAsync(user, cancellationToken) is null)
-        {
-            return false;
-        }
-
-        var authorization = await authorizationService.AuthorizeAsync(user, trip, new ReadTripRequirement());
-        return authorization.Succeeded;
     }
 
     private async Task<int?> ResolvePlannerUserIdAsync(

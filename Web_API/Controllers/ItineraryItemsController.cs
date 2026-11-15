@@ -3,6 +3,7 @@ using Web_API.Contracts;
 using Web_API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace Web_API.Controllers;
 
@@ -10,8 +11,10 @@ namespace Web_API.Controllers;
 [ApiController]
 [Route("api/trips/{tripId:int}/items")]
 [Produces("application/json")]
-public sealed class ItineraryItemsController(IItineraryItemService itemService) : ControllerBase
+public sealed class ItineraryItemsController(IItineraryItemService itemService, IOutputCacheStore outputCacheStore) : ControllerBase
 {
+    private const string ReadCacheTag = "trip-api";
+
     /// <summary>Повертає пункти маршруту для власника або учасника поїздки.</summary>
     /// <param name="tripId">Ідентифікатор поїздки.</param>
     /// <param name="query">Параметри сторінки, фільтрації та сортування.</param>
@@ -22,6 +25,7 @@ public sealed class ItineraryItemsController(IItineraryItemService itemService) 
     /// <response code="404">Поїздки немає або користувач не є власником чи учасником.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicies.ReadItinerary)]
+    [OutputCache(PolicyName = "UserScopedRead", Tags = new[] { ReadCacheTag })]
     [ProducesResponseType<PagedResult<ItineraryItemReadDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized)]
@@ -44,6 +48,7 @@ public sealed class ItineraryItemsController(IItineraryItemService itemService) 
     /// <response code="404">Поїздки або пункту немає чи користувач не має доступу.</response>
     [HttpGet("{itemId:int}")]
     [Authorize(Policy = AuthorizationPolicies.ReadItinerary)]
+    [OutputCache(PolicyName = "UserScopedRead", Tags = new[] { ReadCacheTag })]
     [ProducesResponseType<ItineraryItemReadDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden)]
@@ -99,6 +104,7 @@ public sealed class ItineraryItemsController(IItineraryItemService itemService) 
         }
 
         var item = result.Item!;
+        await outputCacheStore.EvictByTagAsync(ReadCacheTag, cancellationToken);
         return CreatedAtAction(nameof(GetItem), new { tripId, itemId = item.ItemId }, item);
     }
 
@@ -147,6 +153,7 @@ public sealed class ItineraryItemsController(IItineraryItemService itemService) 
             return ValidationProblem(ModelState);
         }
 
+        await outputCacheStore.EvictByTagAsync(ReadCacheTag, cancellationToken);
         return Ok(result.Item);
     }
 
@@ -167,6 +174,10 @@ public sealed class ItineraryItemsController(IItineraryItemService itemService) 
     public async Task<IActionResult> DeleteItem(int tripId, int itemId, CancellationToken cancellationToken)
     {
         var deleted = await itemService.DeleteAsync(User, tripId, itemId, cancellationToken);
+        if (deleted)
+        {
+            await outputCacheStore.EvictByTagAsync(ReadCacheTag, cancellationToken);
+        }
         return deleted ? NoContent() : NotFound();
     }
 }

@@ -81,6 +81,7 @@ internal sealed class TripConfiguration : IEntityTypeConfiguration<Trip>
         entity.HasOne(x => x.Owner).WithMany(x => x.OwnedTrips).HasForeignKey(x => x.OwnerId)
             .OnDelete(DeleteBehavior.Restrict).HasConstraintName("FK_Trips_Users_OwnerId");
         entity.HasIndex(x => x.OwnerId).HasDatabaseName("IX_Trips_OwnerId");
+        entity.HasIndex(x => new { x.OwnerId, x.StartDate }).HasDatabaseName("IX_Trips_OwnerId_StartDate");
     }
 }
 
@@ -99,6 +100,8 @@ internal sealed class TripMemberConfiguration : IEntityTypeConfiguration<TripMem
         entity.HasOne(x => x.User).WithMany(x => x.TripMemberships).HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Restrict).HasConstraintName("FK_TripMembers_Users_UserId");
         entity.HasIndex(x => x.UserId).HasDatabaseName("IX_TripMembers_UserId");
+        entity.HasIndex(x => new { x.TripId, x.Role }).HasDatabaseName("IX_TripMembers_TripId_Role");
+        entity.HasIndex(x => new { x.TripId, x.JoinedAt }).HasDatabaseName("IX_TripMembers_TripId_JoinedAt");
     }
 }
 
@@ -123,6 +126,7 @@ internal sealed class ItineraryItemConfiguration : IEntityTypeConfiguration<Itin
         entity.HasOne(x => x.Type).WithMany(x => x.Items).HasForeignKey(x => x.ItineraryItemTypeId)
             .OnDelete(DeleteBehavior.Restrict).HasConstraintName("FK_ItineraryItems_ItineraryItemTypes_ItineraryItemTypeId");
         entity.HasIndex(x => new { x.TripId, x.StartDateTime }).HasDatabaseName("IX_ItineraryItems_TripId_StartDateTime");
+        entity.HasIndex(x => new { x.TripId, x.EndDateTime }).HasDatabaseName("IX_ItineraryItems_TripId_EndDateTime");
     }
 }
 

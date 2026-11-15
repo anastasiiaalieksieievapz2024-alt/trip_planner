@@ -121,6 +121,9 @@ namespace Kpz.Lab2.Migrations
                     b.HasIndex("TripId", "StartDateTime")
                         .HasDatabaseName("IX_ItineraryItems_TripId_StartDateTime");
 
+                    b.HasIndex("TripId", "EndDateTime")
+                        .HasDatabaseName("IX_ItineraryItems_TripId_EndDateTime");
+
                     b.ToTable("ItineraryItems", null, t =>
                         {
                             t.HasCheckConstraint("CK_ItineraryItems_DateRange", "[EndDateTime] >= [StartDateTime]");
@@ -224,6 +227,9 @@ namespace Kpz.Lab2.Migrations
 
                     b.HasIndex("OwnerId")
                         .HasDatabaseName("IX_Trips_OwnerId");
+
+                    b.HasIndex("OwnerId", "StartDate")
+                        .HasDatabaseName("IX_Trips_OwnerId_StartDate");
 
                     b.HasIndex("TripCategoryId");
 
@@ -354,6 +360,12 @@ namespace Kpz.Lab2.Migrations
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("IX_TripMembers_UserId");
+
+                    b.HasIndex("TripId", "Role")
+                        .HasDatabaseName("IX_TripMembers_TripId_Role");
+
+                    b.HasIndex("TripId", "JoinedAt")
+                        .HasDatabaseName("IX_TripMembers_TripId_JoinedAt");
 
                     b.ToTable("TripMembers", (string)null);
                 });

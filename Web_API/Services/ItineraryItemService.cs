@@ -3,7 +3,6 @@ using Kpz.Lab2.Data;
 using Kpz.Lab2.Models;
 using Web_API.Authorization;
 using Web_API.Contracts;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Web_API.Mappings;
 using Web_API.BusinessRules;
@@ -11,8 +10,7 @@ using Web_API.BusinessRules;
 namespace Web_API.Services;
 
 /// <summary>Реалізує читання й зміну пунктів маршруту з перевіркою доступу до поїздки.</summary>
-public sealed class ItineraryItemService(KpzDbContext db, IAuthorizationService authorizationService)
-    : IItineraryItemService
+public sealed class ItineraryItemService(KpzDbContext db) : IItineraryItemService
 {
     public async Task<PagedResult<ItineraryItemReadDto>?> GetItemsAsync(
         ClaimsPrincipal user, int tripId, ItineraryCollectionQuery query, CancellationToken cancellationToken)
@@ -160,15 +158,16 @@ public sealed class ItineraryItemService(KpzDbContext db, IAuthorizationService 
 
     private async Task<bool> CanReadTripAsync(ClaimsPrincipal user, int tripId, CancellationToken cancellationToken)
     {
-        var trip = await db.Trips.AsNoTracking()
-            .SingleOrDefaultAsync(candidate => candidate.TripId == tripId, cancellationToken);
-        if (trip is null)
+        var email = PlannerClaims.GetEmail(user);
+        if (email is null)
         {
             return false;
         }
 
-        var result = await authorizationService.AuthorizeAsync(user, trip, new ReadTripRequirement());
-        return result.Succeeded;
+        return await db.Trips.AsNoTracking().AnyAsync(trip =>
+            trip.TripId == tripId &&
+            (trip.Owner.Email == email || trip.Members.Any(member => member.User.Email == email)),
+            cancellationToken);
     }
 
     private async Task<Trip?> GetOwnedTripAsync(
