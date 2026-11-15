@@ -48,7 +48,7 @@ public static class DevelopmentDataSeeder
             {
                 FullName = $"Demo Traveler {id:D2}",
                 Email = $"demo.user{id:D2}@example.test",
-                // Демонстраційне значення, не є хешем для справжнього пароля.
+                // �������������� ��������, �� � ����� ��� ����������� ������.
                 PasswordHash = $"DEMO_ONLY_HASH_{id:D2}",
                 CreatedAt = new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc).AddDays(id)
             })
@@ -67,12 +67,12 @@ public static class DevelopmentDataSeeder
                     Destination = Destinations[(id - 1) % Destinations.Length],
                     StartDate = start,
                     EndDate = start.AddDays(4 + (id % 4)),
-                    Description = $"Тестова подорож №{id}; дані призначені для демонстрації запитів."
+                    Description = $"������� ������� �{id}; ��� ��������� ��� ������������ ������."
                 };
             })
             .ToList();
 
-        // Кожна подорож має власника та ще двох учасників; разом створюється 30 зв'язків.
+        // ����� ������� �� �������� �� �� ���� ��������; ����� ����������� 30 ��'����.
         var members = trips.SelectMany((trip, tripIndex) => Enumerable.Range(0, 3).Select(offset =>
         {
             var userIndex = (tripIndex + offset) % users.Count;
@@ -85,7 +85,7 @@ public static class DevelopmentDataSeeder
             };
         })).ToList();
 
-        // Три часові пункти на кожну подорож спрощують фільтрування та групування за датою і типом.
+        // ��� ����� ������ �� ����� ������� ��������� ����������� �� ���������� �� ����� � �����.
         var items = trips.SelectMany((trip, tripIndex) => Enumerable.Range(0, 3).Select(offset =>
         {
             var start = trip.StartDate.ToDateTime(new TimeOnly(9, 0)).AddDays(offset);
@@ -94,7 +94,7 @@ public static class DevelopmentDataSeeder
                 Trip = trip,
                 ItineraryItemTypeId = ((tripIndex + offset) % 5) + 1,
                 Title = $"Demo stop {tripIndex + 1:D2}-{offset + 1}",
-                Description = "Тестовий пункт маршруту для перевірки зв'язків і запитів.",
+                Description = "�������� ����� �������� ��� �������� ��'���� � ������.",
                 StartDateTime = start,
                 EndDateTime = start.AddHours(2),
                 Address = $"Central square {tripIndex + 1}",
@@ -103,7 +103,7 @@ public static class DevelopmentDataSeeder
             };
         })).ToList();
 
-        // Два бронювання на один пункт дають змогу перевіряти групування і сумування вартості.
+        // ��� ���������� �� ���� ����� ����� ����� ��������� ���������� � ��������� �������.
         var bookings = Enumerable.Range(1, 20)
             .Select(id => new Booking
             {

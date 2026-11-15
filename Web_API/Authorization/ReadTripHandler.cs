@@ -1,4 +1,4 @@
-using Kpz.Lab2.Data;
+﻿using Kpz.Lab2.Data;
 using Kpz.Lab2.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -39,3 +39,5 @@ public sealed class ReadTripHandler(KpzDbContext db)
         }
     }
 }
+
+

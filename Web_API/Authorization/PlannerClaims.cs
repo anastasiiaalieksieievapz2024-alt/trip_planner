@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 
 namespace Web_API.Authorization;
 
@@ -15,3 +15,5 @@ public static class PlannerClaims
         return string.IsNullOrWhiteSpace(email) ? null : email;
     }
 }
+
+

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 
 namespace Web_API.Authorization;
 
@@ -22,3 +22,5 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
         return Task.CompletedTask;
     }
 }
+
+

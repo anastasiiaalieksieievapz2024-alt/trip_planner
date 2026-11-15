@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -74,11 +74,11 @@ namespace Kpz.Lab2.Migrations
                 columns: new[] { "TripCategoryId", "Description", "Name" },
                 values: new object[,]
                 {
-                    { 1, "Коротка подорож до міста", "City break" },
-                    { 2, "Відпочинок біля моря або озера", "Beach" },
-                    { 3, "Активна подорож і пригоди", "Adventure" },
-                    { 4, "Музеї, пам'ятки та культурні події", "Cultural" },
-                    { 5, "Подорож для сімейного відпочинку", "Family" }
+                    { 1, "������� ������� �� ����", "City break" },
+                    { 2, "³�������� ��� ���� ��� �����", "Beach" },
+                    { 3, "������� ������� � �������", "Adventure" },
+                    { 4, "����, ���'���� �� �������� ��䳿", "Cultural" },
+                    { 5, "������� ��� �������� ���������", "Family" }
                 });
 
             migrationBuilder.CreateIndex(
