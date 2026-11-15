@@ -14,6 +14,7 @@ public sealed class TripMembersController(ITripMemberService memberService) : Co
 {
     /// <summary>Повертає учасників поїздки для її власника або учасника з правом читання.</summary>
     /// <param name="tripId">Ідентифікатор поїздки.</param>
+    /// <param name="query">Параметри сторінки, фільтрації та сортування.</param>
     /// <param name="cancellationToken">Токен скасування запиту.</param>
     /// <response code="200">Список учасників поїздки.</response>
     /// <response code="401">Токен відсутній або недійсний.</response>
@@ -21,14 +22,15 @@ public sealed class TripMembersController(ITripMemberService memberService) : Co
     /// <response code="404">Поїздки немає або користувач не має до неї доступу.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicies.ReadMembers)]
-    [ProducesResponseType<IReadOnlyList<TripMemberReadDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<PagedResult<TripMemberReadDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IReadOnlyList<TripMemberReadDto>>> GetMembers(
-        int tripId, CancellationToken cancellationToken)
+    public async Task<ActionResult<PagedResult<TripMemberReadDto>>> GetMembers(
+        int tripId, [FromQuery] TripMemberCollectionQuery query, CancellationToken cancellationToken)
     {
-        var members = await memberService.GetMembersAsync(User, tripId, cancellationToken);
+        var members = await memberService.GetMembersAsync(User, tripId, query, cancellationToken);
         return members is null ? NotFound() : Ok(members);
     }
 

@@ -12,8 +12,8 @@ namespace Web_API.Services;
 /// <summary>Керує членством користувачів у поїздках і перевіряє права власника.</summary>
 public sealed class TripMemberService(KpzDbContext db, IAuthorizationService authorizationService) : ITripMemberService
 {
-    public async Task<IReadOnlyList<TripMemberReadDto>?> GetMembersAsync(
-        ClaimsPrincipal user, int tripId, CancellationToken cancellationToken)
+    public async Task<PagedResult<TripMemberReadDto>?> GetMembersAsync(
+        ClaimsPrincipal user, int tripId, TripMemberCollectionQuery query, CancellationToken cancellationToken)
     {
         var trip = await db.Trips.AsNoTracking()
             .SingleOrDefaultAsync(candidate => candidate.TripId == tripId, cancellationToken);
@@ -22,12 +22,30 @@ public sealed class TripMemberService(KpzDbContext db, IAuthorizationService aut
             return null;
         }
 
-        return await db.TripMembers.AsNoTracking()
-            .Where(member => member.TripId == tripId)
-            .OrderBy(member => member.User.FullName)
+        IQueryable<TripMember> members = db.TripMembers.AsNoTracking()
+            .Where(member => member.TripId == tripId);
+        if (!string.IsNullOrWhiteSpace(query.Search))
+            members = members.Where(member => member.User.FullName.Contains(query.Search) || member.User.Email.Contains(query.Search));
+        if (!string.IsNullOrWhiteSpace(query.Role))
+            members = members.Where(member => member.Role.Contains(query.Role));
+
+        var totalCount = await members.CountAsync(cancellationToken);
+        var descending = query.SortOrder == "desc";
+        var orderedMembers = query.SortBy.ToLowerInvariant() switch
+        {
+            "email" => descending ? members.OrderByDescending(member => member.User.Email) : members.OrderBy(member => member.User.Email),
+            "role" => descending ? members.OrderByDescending(member => member.Role) : members.OrderBy(member => member.Role),
+            "joinedat" => descending ? members.OrderByDescending(member => member.JoinedAt) : members.OrderBy(member => member.JoinedAt),
+            _ => descending ? members.OrderByDescending(member => member.User.FullName) : members.OrderBy(member => member.User.FullName)
+        };
+        var items = await orderedMembers.ThenBy(member => member.UserId)
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
             .Select(member => new TripMemberReadDto(
                 member.UserId, member.User.FullName, member.User.Email, member.Role, member.JoinedAt))
             .ToListAsync(cancellationToken);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)query.PageSize);
+        return new PagedResult<TripMemberReadDto>(items, query.Page, query.PageSize, totalCount, totalPages);
     }
 
     public async Task<TripMemberMutationResult> AddMemberAsync(

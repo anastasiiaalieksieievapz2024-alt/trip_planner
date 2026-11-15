@@ -6,8 +6,9 @@ namespace Web_API.Services;
 /// <summary>Виконує бізнес-операції з поїздками для API.</summary>
 public interface ITripService
 {
-    Task<IReadOnlyList<TripReadDto>> GetTripsAsync(
+    Task<PagedResult<TripReadDto>> GetTripsAsync(
         ClaimsPrincipal user,
+        TripCollectionQuery query,
         CancellationToken cancellationToken);
 
     Task<TripReadDto?> GetTripAsync(
@@ -15,9 +16,10 @@ public interface ITripService
         int tripId,
         CancellationToken cancellationToken);
 
-    Task<IReadOnlyList<ItineraryItemReadDto>?> GetItineraryAsync(
+    Task<PagedResult<ItineraryItemReadDto>?> GetItineraryAsync(
         ClaimsPrincipal user,
         int tripId,
+        ItineraryCollectionQuery query,
         CancellationToken cancellationToken);
 
     Task<TripCreationResult> CreateTripAsync(

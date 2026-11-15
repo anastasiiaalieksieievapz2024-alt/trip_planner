@@ -14,6 +14,7 @@ public sealed class ItineraryItemsController(IItineraryItemService itemService) 
 {
     /// <summary>Повертає пункти маршруту для власника або учасника поїздки.</summary>
     /// <param name="tripId">Ідентифікатор поїздки.</param>
+    /// <param name="query">Параметри сторінки, фільтрації та сортування.</param>
     /// <param name="cancellationToken">Токен скасування запиту.</param>
     /// <response code="200">Список пунктів маршруту.</response>
     /// <response code="401">Токен відсутній або недійсний.</response>
@@ -21,13 +22,15 @@ public sealed class ItineraryItemsController(IItineraryItemService itemService) 
     /// <response code="404">Поїздки немає або користувач не є власником чи учасником.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicies.ReadItinerary)]
-    [ProducesResponseType<IReadOnlyList<ItineraryItemReadDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<PagedResult<ItineraryItemReadDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IReadOnlyList<ItineraryItemReadDto>>> GetItems(int tripId, CancellationToken cancellationToken)
+    public async Task<ActionResult<PagedResult<ItineraryItemReadDto>>> GetItems(
+        int tripId, [FromQuery] ItineraryCollectionQuery query, CancellationToken cancellationToken)
     {
-        var items = await itemService.GetItemsAsync(User, tripId, cancellationToken);
+        var items = await itemService.GetItemsAsync(User, tripId, query, cancellationToken);
         return items is null ? NotFound() : Ok(items);
     }
 

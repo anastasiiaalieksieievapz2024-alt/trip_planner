@@ -13,18 +13,21 @@ namespace Web_API.Controllers;
 public sealed class TripsController(ITripService tripService) : ControllerBase
 {
     /// <summary>Повертає поїздки, якими володіє користувач або до яких його додано як учасника.</summary>
+    /// <param name="query">Параметри сторінки, фільтрації та сортування.</param>
     /// <param name="cancellationToken">Токен для скасування запиту до сервісу.</param>
     /// <response code="200">Повертає доступні користувачу поїздки або порожній масив.</response>
     /// <response code="401">Токен відсутній, недійсний або прострочений.</response>
     /// <response code="403">Токен не містить дозволу <c>read:trips</c>.</response>
     [HttpGet]
     [Authorize(Policy = AuthorizationPolicies.ReadTrips)]
-    [ProducesResponseType<IReadOnlyList<TripReadDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<PagedResult<TripReadDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized, Description = "Потрібна автентифікація.")]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden, Description = "У токені немає дозволу read:trips.")]
-    public async Task<ActionResult<IReadOnlyList<TripReadDto>>> GetTrips(CancellationToken cancellationToken)
+    public async Task<ActionResult<PagedResult<TripReadDto>>> GetTrips(
+        [FromQuery] TripCollectionQuery query, CancellationToken cancellationToken)
     {
-        var trips = await tripService.GetTripsAsync(User, cancellationToken);
+        var trips = await tripService.GetTripsAsync(User, query, cancellationToken);
         return Ok(trips);
     }
 
@@ -49,6 +52,7 @@ public sealed class TripsController(ITripService tripService) : ControllerBase
 
     /// <summary>Повертає хронологічний маршрут і підтвердження бронювань, якщо користувач має доступ до поїздки.</summary>
     /// <param name="tripId">Ідентифікатор запитаної поїздки.</param>
+    /// <param name="query">Параметри сторінки, фільтрації та сортування.</param>
     /// <param name="cancellationToken">Токен для скасування запиту до сервісу.</param>
     /// <response code="200">Повертає маршрут поїздки та підтвердження бронювань.</response>
     /// <response code="401">Токен відсутній, недійсний або прострочений.</response>
@@ -56,15 +60,17 @@ public sealed class TripsController(ITripService tripService) : ControllerBase
     /// <response code="404">Поїздку не знайдено або користувач не має до неї доступу.</response>
     [HttpGet("{tripId:int}/itinerary")]
     [Authorize(Policy = AuthorizationPolicies.ReadItinerary)]
-    [ProducesResponseType<IReadOnlyList<ItineraryItemReadDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<PagedResult<ItineraryItemReadDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized, Description = "Потрібна автентифікація.")]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden, Description = "У токені немає дозволу read:itinerary.")]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status404NotFound, Description = "Поїздку не знайдено або користувач не має до неї доступу.")]
-    public async Task<ActionResult<IReadOnlyList<ItineraryItemReadDto>>> GetItinerary(
+    public async Task<ActionResult<PagedResult<ItineraryItemReadDto>>> GetItinerary(
         int tripId,
+        [FromQuery] ItineraryCollectionQuery query,
         CancellationToken cancellationToken)
     {
-        var itinerary = await tripService.GetItineraryAsync(User, tripId, cancellationToken);
+        var itinerary = await tripService.GetItineraryAsync(User, tripId, query, cancellationToken);
         return itinerary is null ? NotFound() : Ok(itinerary);
     }
 

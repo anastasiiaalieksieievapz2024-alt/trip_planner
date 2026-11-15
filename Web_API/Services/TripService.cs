@@ -12,21 +12,40 @@ namespace Web_API.Services;
 /// <summary>Реалізує бізнес-правила читання, авторизації та створення поїздок.</summary>
 public sealed class TripService(KpzDbContext db, IAuthorizationService authorizationService) : ITripService
 {
-    public async Task<IReadOnlyList<TripReadDto>> GetTripsAsync(
+    public async Task<PagedResult<TripReadDto>> GetTripsAsync(
         ClaimsPrincipal user,
+        TripCollectionQuery query,
         CancellationToken cancellationToken)
     {
         var userId = await ResolvePlannerUserIdAsync(user, cancellationToken);
         if (userId is null)
         {
-            return Array.Empty<TripReadDto>();
+            return new PagedResult<TripReadDto>(Array.Empty<TripReadDto>(), query.Page, query.PageSize, 0, 0);
         }
 
-        return await db.Trips.AsNoTracking()
+        IQueryable<Trip> trips = db.Trips.AsNoTracking()
             .Where(trip => trip.OwnerId == userId.Value || db.TripMembers.Any(member =>
-                member.TripId == trip.TripId && member.UserId == userId.Value))
-            .OrderBy(trip => trip.StartDate)
-            .ThenBy(trip => trip.TripId)
+                member.TripId == trip.TripId && member.UserId == userId.Value));
+
+        if (!string.IsNullOrWhiteSpace(query.Destination))
+            trips = trips.Where(trip => trip.Destination.Contains(query.Destination));
+        if (!string.IsNullOrWhiteSpace(query.Category))
+            trips = trips.Where(trip => trip.Category.Name.Contains(query.Category));
+
+        var totalCount = await trips.CountAsync(cancellationToken);
+        var descending = query.SortOrder == "desc";
+        var orderedTrips = query.SortBy.ToLowerInvariant() switch
+        {
+            "tripname" => descending ? trips.OrderByDescending(trip => trip.TripName) : trips.OrderBy(trip => trip.TripName),
+            "destination" => descending ? trips.OrderByDescending(trip => trip.Destination) : trips.OrderBy(trip => trip.Destination),
+            "enddate" => descending ? trips.OrderByDescending(trip => trip.EndDate) : trips.OrderBy(trip => trip.EndDate),
+            "category" => descending ? trips.OrderByDescending(trip => trip.Category.Name) : trips.OrderBy(trip => trip.Category.Name),
+            _ => descending ? trips.OrderByDescending(trip => trip.StartDate) : trips.OrderBy(trip => trip.StartDate)
+        };
+
+        var items = await orderedTrips.ThenBy(trip => trip.TripId)
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
             .Select(trip => new TripReadDto(
                 trip.TripId,
                 trip.TripName,
@@ -37,6 +56,8 @@ public sealed class TripService(KpzDbContext db, IAuthorizationService authoriza
                 trip.TripCategoryId,
                 trip.Category.Name))
             .ToListAsync(cancellationToken);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)query.PageSize);
+        return new PagedResult<TripReadDto>(items, query.Page, query.PageSize, totalCount, totalPages);
     }
 
     public async Task<TripReadDto?> GetTripAsync(
@@ -55,9 +76,10 @@ public sealed class TripService(KpzDbContext db, IAuthorizationService authoriza
         return DomainDtoMapper.ToReadDto(trip);
     }
 
-    public async Task<IReadOnlyList<ItineraryItemReadDto>?> GetItineraryAsync(
+    public async Task<PagedResult<ItineraryItemReadDto>?> GetItineraryAsync(
         ClaimsPrincipal user,
         int tripId,
+        ItineraryCollectionQuery query,
         CancellationToken cancellationToken)
     {
         var userId = await ResolvePlannerUserIdAsync(user, cancellationToken);
@@ -82,10 +104,26 @@ public sealed class TripService(KpzDbContext db, IAuthorizationService authoriza
             return null;
         }
 
-        var stops = await db.ItineraryItems.AsNoTracking()
-            .Where(item => item.TripId == tripId)
-            .OrderBy(item => item.StartDateTime)
-            .ThenBy(item => item.ItemId)
+        IQueryable<ItineraryItem> itinerary = db.ItineraryItems.AsNoTracking()
+            .Where(item => item.TripId == tripId);
+        if (!string.IsNullOrWhiteSpace(query.Title)) itinerary = itinerary.Where(item => item.Title.Contains(query.Title));
+        if (!string.IsNullOrWhiteSpace(query.Type)) itinerary = itinerary.Where(item => item.Type.Name.Contains(query.Type));
+        if (query.From.HasValue) itinerary = itinerary.Where(item => item.StartDateTime >= query.From.Value);
+        if (query.To.HasValue) itinerary = itinerary.Where(item => item.StartDateTime <= query.To.Value);
+
+        var totalCount = await itinerary.CountAsync(cancellationToken);
+        var descending = query.SortOrder == "desc";
+        var orderedItems = query.SortBy.ToLowerInvariant() switch
+        {
+            "enddatetime" => descending ? itinerary.OrderByDescending(item => item.EndDateTime) : itinerary.OrderBy(item => item.EndDateTime),
+            "title" => descending ? itinerary.OrderByDescending(item => item.Title) : itinerary.OrderBy(item => item.Title),
+            "type" => descending ? itinerary.OrderByDescending(item => item.Type.Name) : itinerary.OrderBy(item => item.Type.Name),
+            _ => descending ? itinerary.OrderByDescending(item => item.StartDateTime) : itinerary.OrderBy(item => item.StartDateTime)
+        };
+
+        var stops = await orderedItems.ThenBy(item => item.ItemId)
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
             .Select(item => new StopData(
                 item.ItemId,
                 item.Type.Name,
@@ -115,7 +153,7 @@ public sealed class TripService(KpzDbContext db, IAuthorizationService authoriza
             .ToDictionary(group => group.Key,
                 group => (IReadOnlyList<BookingConfirmation>)group.ToList());
 
-        return stops.Select(stop => new ItineraryItemReadDto(
+        var items = stops.Select(stop => new ItineraryItemReadDto(
             stop.ItemId,
             stop.Type,
             stop.Title,
@@ -127,6 +165,8 @@ public sealed class TripService(KpzDbContext db, IAuthorizationService authoriza
             stop.Longitude,
             bookingsByItem.GetValueOrDefault(stop.ItemId, Array.Empty<BookingConfirmation>()))
         ).ToList();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)query.PageSize);
+        return new PagedResult<ItineraryItemReadDto>(items, query.Page, query.PageSize, totalCount, totalPages);
     }
 
     public async Task<TripCreationResult> CreateTripAsync(

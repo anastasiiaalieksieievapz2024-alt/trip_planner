@@ -13,24 +13,41 @@ namespace Web_API.Services;
 public sealed class ItineraryItemService(KpzDbContext db, IAuthorizationService authorizationService)
     : IItineraryItemService
 {
-    public async Task<IReadOnlyList<ItineraryItemReadDto>?> GetItemsAsync(
-        ClaimsPrincipal user, int tripId, CancellationToken cancellationToken)
+    public async Task<PagedResult<ItineraryItemReadDto>?> GetItemsAsync(
+        ClaimsPrincipal user, int tripId, ItineraryCollectionQuery query, CancellationToken cancellationToken)
     {
         if (!await CanReadTripAsync(user, tripId, cancellationToken))
         {
             return null;
         }
 
-        var stops = await db.ItineraryItems.AsNoTracking()
-            .Where(item => item.TripId == tripId)
-            .OrderBy(item => item.StartDateTime)
-            .ThenBy(item => item.ItemId)
+        IQueryable<ItineraryItem> itemsQuery = db.ItineraryItems.AsNoTracking()
+            .Where(item => item.TripId == tripId);
+        if (!string.IsNullOrWhiteSpace(query.Title)) itemsQuery = itemsQuery.Where(item => item.Title.Contains(query.Title));
+        if (!string.IsNullOrWhiteSpace(query.Type)) itemsQuery = itemsQuery.Where(item => item.Type.Name.Contains(query.Type));
+        if (query.From.HasValue) itemsQuery = itemsQuery.Where(item => item.StartDateTime >= query.From.Value);
+        if (query.To.HasValue) itemsQuery = itemsQuery.Where(item => item.StartDateTime <= query.To.Value);
+
+        var totalCount = await itemsQuery.CountAsync(cancellationToken);
+        var descending = query.SortOrder == "desc";
+        var orderedItems = query.SortBy.ToLowerInvariant() switch
+        {
+            "enddatetime" => descending ? itemsQuery.OrderByDescending(item => item.EndDateTime) : itemsQuery.OrderBy(item => item.EndDateTime),
+            "title" => descending ? itemsQuery.OrderByDescending(item => item.Title) : itemsQuery.OrderBy(item => item.Title),
+            "type" => descending ? itemsQuery.OrderByDescending(item => item.Type.Name) : itemsQuery.OrderBy(item => item.Type.Name),
+            _ => descending ? itemsQuery.OrderByDescending(item => item.StartDateTime) : itemsQuery.OrderBy(item => item.StartDateTime)
+        };
+        var stops = await orderedItems.ThenBy(item => item.ItemId)
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
             .Select(item => new StopData(
                 item.ItemId, item.Type.Name, item.Title, item.Description,
                 item.StartDateTime, item.EndDateTime, item.Address, item.Latitude, item.Longitude))
             .ToListAsync(cancellationToken);
 
-        return await AddBookingsAsync(stops, cancellationToken);
+        var resultItems = await AddBookingsAsync(stops, cancellationToken);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)query.PageSize);
+        return new PagedResult<ItineraryItemReadDto>(resultItems, query.Page, query.PageSize, totalCount, totalPages);
     }
 
     public async Task<ItineraryItemReadDto?> GetItemAsync(
