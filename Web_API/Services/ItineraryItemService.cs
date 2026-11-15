@@ -6,6 +6,7 @@ using Web_API.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Web_API.Mappings;
+using Web_API.BusinessRules;
 
 namespace Web_API.Services;
 
@@ -81,6 +82,11 @@ public sealed class ItineraryItemService(KpzDbContext db, IAuthorizationService 
             return new(ItineraryItemMutationStatus.TripNotFound, null);
         }
 
+        if (!ItineraryItemDateRule.IsSatisfied(trip, request))
+        {
+            return new(ItineraryItemMutationStatus.OutsideTripDates, null);
+        }
+
         var typeExists = await db.ItineraryItemTypes.AsNoTracking()
             .AnyAsync(type => type.ItineraryItemTypeId == request.ItineraryItemTypeId, cancellationToken);
         if (!typeExists)
@@ -110,6 +116,11 @@ public sealed class ItineraryItemService(KpzDbContext db, IAuthorizationService 
         if (item is null)
         {
             return new(ItineraryItemMutationStatus.ItemNotFound, null);
+        }
+
+        if (!ItineraryItemDateRule.IsSatisfied(trip, request))
+        {
+            return new(ItineraryItemMutationStatus.OutsideTripDates, null);
         }
 
         var typeExists = await db.ItineraryItemTypes.AsNoTracking()

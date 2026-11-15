@@ -7,7 +7,8 @@ public enum ItineraryItemMutationStatus
     Succeeded,
     TripNotFound,
     ItemNotFound,
-    TypeNotFound
+    TypeNotFound,
+    OutsideTripDates
 }
 
 public sealed record ItineraryItemMutationResult(ItineraryItemMutationStatus Status, ItineraryItemReadDto? Item);

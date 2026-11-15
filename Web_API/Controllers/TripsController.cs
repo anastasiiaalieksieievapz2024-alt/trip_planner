@@ -107,7 +107,7 @@ public sealed class TripsController(ITripService tripService) : ControllerBase
         }
 
         var trip = result.Trip!;
-        return CreatedAtAction(nameof(GetItinerary), new { tripId = trip.TripId }, trip);
+        return CreatedAtAction(nameof(GetTrip), new { tripId = trip.TripId }, trip);
     }
 
     /// <summary>Оновлює поїздку, якщо автентифікований користувач є її власником.</summary>

@@ -69,6 +69,7 @@ public sealed class ItineraryItemsController(IItineraryItemService itemService) 
     [Consumes("application/json")]
     [ProducesResponseType<ItineraryItemReadDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status404NotFound)]
@@ -80,6 +81,15 @@ public sealed class ItineraryItemsController(IItineraryItemService itemService) 
         if (result.Status == ItineraryItemMutationStatus.TripNotFound)
         {
             return NotFound();
+        }
+
+        if (result.Status == ItineraryItemMutationStatus.OutsideTripDates)
+        {
+            return UnprocessableEntity(new ApiErrorResponse(
+                StatusCodes.Status422UnprocessableEntity,
+                "Unprocessable Entity",
+                "Дати пункту маршруту мають бути в межах дат поїздки.",
+                Request.Path));
         }
 
         if (result.Status == ItineraryItemMutationStatus.TypeNotFound)
@@ -108,6 +118,7 @@ public sealed class ItineraryItemsController(IItineraryItemService itemService) 
     [Consumes("application/json")]
     [ProducesResponseType<ItineraryItemReadDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status404NotFound)]
@@ -119,6 +130,15 @@ public sealed class ItineraryItemsController(IItineraryItemService itemService) 
         if (result.Status is ItineraryItemMutationStatus.TripNotFound or ItineraryItemMutationStatus.ItemNotFound)
         {
             return NotFound();
+        }
+
+        if (result.Status == ItineraryItemMutationStatus.OutsideTripDates)
+        {
+            return UnprocessableEntity(new ApiErrorResponse(
+                StatusCodes.Status422UnprocessableEntity,
+                "Unprocessable Entity",
+                "Дати пункту маршруту мають бути в межах дат поїздки.",
+                Request.Path));
         }
 
         if (result.Status == ItineraryItemMutationStatus.TypeNotFound)
