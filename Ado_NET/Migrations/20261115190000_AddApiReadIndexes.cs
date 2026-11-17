@@ -1,4 +1,4 @@
-using Kpz.Lab2.Data;
+﻿using Kpz.Lab2.Data;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 

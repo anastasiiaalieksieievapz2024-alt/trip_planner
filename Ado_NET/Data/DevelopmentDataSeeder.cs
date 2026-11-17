@@ -1,17 +1,17 @@
-using Kpz.Lab2.Models;
+﻿using Kpz.Lab2.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kpz.Lab2.Data;
 
 /// <summary>
-/// Registers and creates repeatable development data. Lookup rows are configured with HasData;
-/// this seeder adds the users, trips, and dependent sample records after migrations.
+/// Реєструє та створює повторювані демонстраційні дані. Довідники задаються через HasData;
+/// цей сідер після міграцій додає користувачів, поїздки та пов’язані тестові записи.
 /// </summary>
 public static class DevelopmentDataSeeder
 {
     private const string MarkerEmail = "demo.user01@example.test";
 
-    /// <summary>Registers both callbacks because EF tools and the application may use different paths.</summary>
+    /// <summary>Реєструє обидва способи заповнення, оскільки EF Tools і застосунок можуть викликати різні шляхи.</summary>
     public static DbContextOptionsBuilder UseDevelopmentDataSeeding(this DbContextOptionsBuilder options)
     {
         return options
@@ -46,9 +46,9 @@ public static class DevelopmentDataSeeder
         var users = Enumerable.Range(1, 10)
             .Select(id => new User
             {
-                FullName = $"Demo Traveler {id:D2}",
+                FullName = $"Демо-мандрівник {id:D2}",
                 Email = $"demo.user{id:D2}@example.test",
-                // �������������� ��������, �� � ����� ��� ����������� ������.
+                // Це тестове значення; лабораторна не використовує його для автентифікації.
                 PasswordHash = $"DEMO_ONLY_HASH_{id:D2}",
                 CreatedAt = new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc).AddDays(id)
             })
@@ -63,16 +63,16 @@ public static class DevelopmentDataSeeder
                 {
                     Owner = users[index],
                     TripCategoryId = ((id - 1) % 5) + 1,
-                    TripName = $"Demo Trip {id:D2}",
+                    TripName = $"Демо-поїздка {id:D2}",
                     Destination = Destinations[(id - 1) % Destinations.Length],
                     StartDate = start,
                     EndDate = start.AddDays(4 + (id % 4)),
-                    Description = $"������� ������� �{id}; ��� ��������� ��� ������������ ������."
+                Description = $"Демонстраційний опис поїздки №{id}; тестові дані для перевірки роботи системи."
                 };
             })
             .ToList();
 
-        // ����� ������� �� �������� �� �� ���� ��������; ����� ����������� 30 ��'����.
+        // Для кожної поїздки додаємо трьох учасників із ролями власника, редактора та читача.
         var members = trips.SelectMany((trip, tripIndex) => Enumerable.Range(0, 3).Select(offset =>
         {
             var userIndex = (tripIndex + offset) % users.Count;
@@ -85,7 +85,7 @@ public static class DevelopmentDataSeeder
             };
         })).ToList();
 
-        // ��� ����� ������ �� ����� ������� ��������� ����������� �� ���������� �� ����� � �����.
+        // Створюємо по три демонстраційні пункти маршруту для кожної поїздки.
         var items = trips.SelectMany((trip, tripIndex) => Enumerable.Range(0, 3).Select(offset =>
         {
             var start = trip.StartDate.ToDateTime(new TimeOnly(9, 0)).AddDays(offset);
@@ -93,8 +93,8 @@ public static class DevelopmentDataSeeder
             {
                 Trip = trip,
                 ItineraryItemTypeId = ((tripIndex + offset) % 5) + 1,
-                Title = $"Demo stop {tripIndex + 1:D2}-{offset + 1}",
-                Description = "�������� ����� �������� ��� �������� ��'���� � ������.",
+                Title = $"Демо-зупинка {tripIndex + 1:D2}-{offset + 1}",
+                Description = "Демонстраційний пункт маршруту для перевірки зв’язків і запитів.",
                 StartDateTime = start,
                 EndDateTime = start.AddHours(2),
                 Address = $"Central square {tripIndex + 1}",
@@ -103,7 +103,7 @@ public static class DevelopmentDataSeeder
             };
         })).ToList();
 
-        // ��� ���������� �� ���� ����� ����� ����� ��������� ���������� � ��������� �������.
+        // Бронювання прив’язуємо до перших двадцяти тестових пунктів маршруту.
         var bookings = Enumerable.Range(1, 20)
             .Select(id => new Booking
             {

@@ -1,9 +1,9 @@
-using System.Data;
+﻿using System.Data;
 using Microsoft.Data.SqlClient;
 
 namespace Kpz.Lab2.Data;
 
-/// <summary>����������, ���������� ������������� ����� SqlDataReader.</summary>
+/// Запис користувача, прочитаний із таблиці dbo.Users через SqlDataReader.
 public sealed record UserRecord(
     int UserId,
     string FullName,
@@ -11,7 +11,7 @@ public sealed record UserRecord(
     string PasswordHash,
     DateTime CreatedAt);
 
-/// <summary>������� ����� �� ��������� � ������ �� �������.</summary>
+/// Запис поїздки разом з ім’ям власника та назвою категорії.
 public sealed record TripRecord(
     int TripId,
     int OwnerId,
@@ -26,8 +26,8 @@ public sealed record TripRecord(
     string CategoryName);
 
 /// <summary>
-/// ����������� ADO.NET CRUD ��� ���'������ ������� dbo.Users � dbo.Trips.
-/// �� �������� ����������� �� SQL-���������, � ������� ���������� ����� SqlDataReader.
+/// Виконує CRUD для dbo.Users і dbo.Trips без EF Core.
+/// Запити параметризовані, а дані рядків зчитуються через SqlDataReader.
 /// </summary>
 public sealed class SqlCrudRepository(string connectionString)
 {

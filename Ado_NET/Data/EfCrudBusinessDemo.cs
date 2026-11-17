@@ -1,9 +1,9 @@
-using Kpz.Lab2.Models;
+﻿using Kpz.Lab2.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kpz.Lab2.Data;
 
-/// <summary>Demonstrates EF Core CRUD for three entities and an atomic operation over a trip graph.</summary>
+/// <summary>Демонструє CRUD в EF Core для трьох сутностей і атомарне створення пов’язаного графа поїздки.</summary>
 public static class EfCrudBusinessDemo
 {
     public static async Task RunAsync(KpzDbContext db, CancellationToken cancellationToken)
@@ -15,68 +15,68 @@ public static class EfCrudBusinessDemo
         var graphTripId = 0;
 
         Console.WriteLine();
-        Console.WriteLine("=== EF CORE CRUD DEMO ===");
+        Console.WriteLine("=== CRUD У EF CORE ===");
 
         try
         {
             var user = await CreateUserAsync(db, email, cancellationToken);
             userId = user.UserId;
-            Console.WriteLine($"CREATE User: id={user.UserId}");
+            Console.WriteLine($"СТВОРЕНО користувача: id={user.UserId}");
 
             var readUser = await ReadUserAsync(db, user.UserId, cancellationToken);
-            Console.WriteLine($"READ User: {readUser?.FullName} | {readUser?.Email}");
+            Console.WriteLine($"ПРОЧИТАНО користувача: {readUser?.FullName} | {readUser?.Email}");
 
             var userUpdated = await UpdateUserAsync(db, user.UserId, cancellationToken);
-            Console.WriteLine($"UPDATE User: {userUpdated}");
+            Console.WriteLine($"ОНОВЛЕНО користувача: {userUpdated}");
 
             var trip = await CreateTripAsync(db, user.UserId, "EF CRUD Trip", cancellationToken);
             standaloneTripId = trip.TripId;
-            Console.WriteLine($"CREATE Trip: id={trip.TripId}");
+            Console.WriteLine($"СТВОРЕНО поїздку: id={trip.TripId}");
 
             var readTrip = await ReadTripAsync(db, trip.TripId, cancellationToken);
-            Console.WriteLine($"READ Trip: {readTrip?.TripName} | {readTrip?.Destination}");
+            Console.WriteLine($"ПРОЧИТАНО поїздку: {readTrip?.TripName} | {readTrip?.Destination}");
 
             var tripUpdated = await UpdateTripAsync(db, trip.TripId, cancellationToken);
-            Console.WriteLine($"UPDATE Trip: {tripUpdated}");
+            Console.WriteLine($"ОНОВЛЕНО поїздку: {tripUpdated}");
 
             var item = await CreateItineraryItemAsync(db, trip.TripId, cancellationToken);
-            Console.WriteLine($"CREATE ItineraryItem: id={item.ItemId}");
+            Console.WriteLine($"СТВОРЕНО пункт маршруту: id={item.ItemId}");
 
             var readItem = await ReadItineraryItemAsync(db, item.ItemId, cancellationToken);
-            Console.WriteLine($"READ ItineraryItem: {readItem?.Title}");
+            Console.WriteLine($"ПРОЧИТАНО пункт маршруту: {readItem?.Title}");
 
             var itemUpdated = await UpdateItineraryItemAsync(db, item.ItemId, cancellationToken);
-            Console.WriteLine($"UPDATE ItineraryItem: {itemUpdated}");
+            Console.WriteLine($"ОНОВЛЕНО пункт маршруту: {itemUpdated}");
 
             var itemDeleted = await DeleteItineraryItemAsync(db, item.ItemId, cancellationToken);
-            Console.WriteLine($"DELETE ItineraryItem: {itemDeleted}");
+            Console.WriteLine($"ВИДАЛЕНО пункт маршруту: {itemDeleted}");
 
             var standaloneTripDeleted = await DeleteTripAsync(db, standaloneTripId, cancellationToken);
             standaloneTripId = 0;
-            Console.WriteLine($"DELETE Trip: {standaloneTripDeleted}");
+            Console.WriteLine($"ВИДАЛЕНО поїздку: {standaloneTripDeleted}");
 
             graphTripId = await CreateTripGraphInTransactionAsync(db, user.UserId, cancellationToken);
             var graph = await ReadTripGraphAsync(db, graphTripId, cancellationToken);
             var bookingCount = graph?.ItineraryItems.Sum(routeItem => routeItem.Bookings.Count) ?? 0;
 
             Console.WriteLine();
-            Console.WriteLine("=== EF CORE BUSINESS OPERATION: CREATE TRIP GRAPH ===");
+            Console.WriteLine("=== БІЗНЕС-ОПЕРАЦІЯ EF CORE: СТВОРЕННЯ ГРАФА ПОЇЗДКИ ===");
             Console.WriteLine(
-                $"Committed Trip #{graphTripId}: members={graph?.Members.Count ?? 0}, " +
-                $"itinerary items={graph?.ItineraryItems.Count ?? 0}, bookings={bookingCount}, " +
-                $"documents={graph?.Documents.Count ?? 0}.");
+                $"Зафіксовано поїздку №{graphTripId}: учасників={graph?.Members.Count ?? 0}, " +
+                $"пунктів маршруту={graph?.ItineraryItems.Count ?? 0}, бронювань={bookingCount}, " +
+                $"документів={graph?.Documents.Count ?? 0}.");
 
             var graphTripDeleted = await DeleteTripAsync(db, graphTripId, cancellationToken);
             graphTripId = 0;
-            Console.WriteLine($"Demo graph cleanup (cascade delete): {graphTripDeleted}");
+            Console.WriteLine($"Очищення демо-графа (каскадне видалення): {graphTripDeleted}");
 
             var userDeleted = await DeleteUserAsync(db, user.UserId, cancellationToken);
             userId = 0;
-            Console.WriteLine($"DELETE User: {userDeleted}");
+            Console.WriteLine($"ВИДАЛЕНО користувача: {userDeleted}");
         }
         finally
         {
-            // Best-effort cleanup if the demo is interrupted after creating its temporary records.
+            // За можливості видаляємо тимчасові записи, якщо демонстрація перервалася.
             if (graphTripId != 0)
             {
                 await DeleteTripAsync(db, graphTripId, cancellationToken);
@@ -98,7 +98,7 @@ public static class EfCrudBusinessDemo
     {
         var user = new User
         {
-            FullName = "EF CRUD Demo User",
+            FullName = "Користувач для демонстрації EF CRUD",
             Email = email,
             PasswordHash = "DEMO_ONLY_HASH",
             CreatedAt = DateTime.UtcNow
@@ -120,7 +120,7 @@ public static class EfCrudBusinessDemo
             return false;
         }
 
-        user.FullName = "EF CRUD Demo User Updated";
+        user.FullName = "Користувача EF CRUD оновлено";
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -265,7 +265,7 @@ public static class EfCrudBusinessDemo
             {
                 OwnerId = ownerId,
                 TripCategoryId = 4,
-                TripName = "EF Business Graph Demo",
+            TripName = "Демонстрація графа поїздки EF",
                 Destination = "Prague",
                 StartDate = new DateOnly(2030, 5, 10),
                 EndDate = new DateOnly(2030, 5, 14),
@@ -284,8 +284,8 @@ public static class EfCrudBusinessDemo
             {
                 Trip = trip,
                 ItineraryItemTypeId = 4,
-                Title = "Museum visit",
-                Description = "Business operation sample activity.",
+                Title = "Відвідування музею",
+                Description = "Приклад активності для бізнес-операції.",
                 StartDateTime = new DateTime(2030, 5, 11, 10, 0, 0),
                 EndDateTime = new DateTime(2030, 5, 11, 12, 0, 0),
                 Address = "Prague city center",
@@ -308,7 +308,7 @@ public static class EfCrudBusinessDemo
                 Trip = trip,
                 ItineraryItemTypeId = 4,
                 Title = "Walking tour",
-                Description = "Second sample activity in the trip graph.",
+                Description = "Друга демонстраційна активність у графі поїздки.",
                 StartDateTime = new DateTime(2030, 5, 12, 9, 0, 0),
                 EndDateTime = new DateTime(2030, 5, 12, 11, 0, 0),
                 Address = "Prague old town",
@@ -321,7 +321,7 @@ public static class EfCrudBusinessDemo
             trip.Documents.Add(new TripDocument
             {
                 Trip = trip,
-                DocumentName = "Demo travel ticket",
+                DocumentName = "Демонстраційний квиток",
                 DocumentType = "Ticket",
                 FilePath = "demo/ef-graph/ticket.pdf",
                 IsRequired = true,

@@ -1,15 +1,15 @@
-using Microsoft.EntityFrameworkCore.Metadata;
+﻿using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kpz.Lab2.Data;
 
-/// <summary>Prints the EF Core model metadata configured for the database context.</summary>
+/// <summary>Виводить метадані моделі EF Core, налаштованої для контексту бази даних.</summary>
 public static class EfModelDemo
 {
     public static void Print(IModel model)
     {
         Console.WriteLine();
-        Console.WriteLine("=== EF CORE MODEL CONFIGURATION ===");
+        Console.WriteLine("=== НАЛАШТУВАННЯ МОДЕЛІ EF CORE ===");
 
         foreach (var entity in model.GetEntityTypes().OrderBy(entity => entity.GetTableName()))
         {
@@ -19,12 +19,12 @@ public static class EfModelDemo
                 ? "(no primary key)"
                 : string.Join(", ", primaryKey.Properties.Select(property => property.Name));
 
-            Console.WriteLine($"Table {tableName}: PK=({keyNames})");
+            Console.WriteLine($"Таблиця {tableName}: первинний ключ=({keyNames})");
 
             foreach (var index in entity.GetIndexes().Where(index => index.IsUnique))
             {
                 var indexColumns = string.Join(", ", index.Properties.Select(property => property.Name));
-                Console.WriteLine($"  UNIQUE INDEX ({indexColumns})");
+                Console.WriteLine($"  Унікальний індекс ({indexColumns})");
             }
 
             foreach (var foreignKey in entity.GetForeignKeys())

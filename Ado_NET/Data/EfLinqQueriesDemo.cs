@@ -1,4 +1,4 @@
-using Kpz.Lab2.Models;
+﻿using Kpz.Lab2.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kpz.Lab2.Data;
@@ -23,10 +23,10 @@ public sealed record TripPageResult(
     int TotalCount,
     IReadOnlyList<Trip> Items);
 
-/// <summary>Examples of six EF Core LINQ query patterns required by the lab.</summary>
+/// <summary>Приклади шести шаблонів LINQ-запитів EF Core для лабораторної роботи.</summary>
 public static class EfLinqQueriesDemo
 {
-    // 1. Multi-parameter filtering; AsNoTracking is appropriate because returned entities are read-only.
+    // 1. Фільтрація за кількома параметрами; AsNoTracking використовується для читання без змін.
     public static async Task<List<Trip>> FilterTripsAsync(
         KpzDbContext db,
         int? categoryId,
@@ -63,7 +63,7 @@ public static class EfLinqQueriesDemo
             .ToListAsync(cancellationToken);
     }
 
-    // 2. Sorting by multiple columns with a stable unique-key tie-breaker.
+    // 2. Сортування за кількома стовпцями зі стабільним унікальним ключем наприкінці.
     public static Task<List<Trip>> SortTripsAsync(KpzDbContext db, CancellationToken cancellationToken) =>
         db.Trips
             .AsNoTracking()
@@ -72,7 +72,7 @@ public static class EfLinqQueriesDemo
             .ThenBy(trip => trip.TripId)
             .ToListAsync(cancellationToken);
 
-    // 3. DTO projection selects only the fields needed by a list view.
+    // 3. Проєкція DTO вибирає лише поля, потрібні для відображення списку.
     public static Task<List<TripListDto>> ProjectTripsToDtoAsync(
         KpzDbContext db,
         CancellationToken cancellationToken) =>
@@ -89,7 +89,7 @@ public static class EfLinqQueriesDemo
                 trip.ItineraryItems.Count))
             .ToListAsync(cancellationToken);
 
-    // 4. Related data is loaded explicitly; AsSplitQuery avoids a cartesian product for collections.
+    // 4. Пов’язані дані завантажуються явно; AsSplitQuery уникає декартового добутку колекцій.
     public static Task<List<Trip>> GetTripsWithRelatedDataAsync(
         KpzDbContext db,
         CancellationToken cancellationToken) =>
@@ -104,7 +104,7 @@ public static class EfLinqQueriesDemo
             .ThenBy(trip => trip.TripId)
             .ToListAsync(cancellationToken);
 
-    // 5. Group bookings by trip category and aggregate booking count and total price.
+    // 5. Групування бронювань за категоріями з підрахунком кількості та загальної вартості.
     public static async Task<List<CategoryBookingStatsDto>> GroupBookingsByCategoryAsync(
         KpzDbContext db,
         DateOnly startsOnOrAfter,
@@ -134,7 +134,7 @@ public static class EfLinqQueriesDemo
             .ToList();
     }
 
-    // 6. Pagination uses a stable order, Skip, and Take; TotalCount is returned for page controls.
+    // 6. Пагінація використовує стабільний порядок, Skip і Take та повертає загальну кількість.
     public static async Task<TripPageResult> GetTripPageAsync(
         KpzDbContext db,
         int pageNumber,
@@ -162,34 +162,34 @@ public static class EfLinqQueriesDemo
         var toDateExclusive = new DateOnly(2027, 3, 1);
 
         Console.WriteLine();
-        Console.WriteLine("=== EF CORE LINQ DEMO ===");
+        Console.WriteLine("=== ДЕМОНСТРАЦІЯ LINQ У EF CORE ===");
 
         var filtered = await FilterTripsAsync(
             db, categoryId: 1, destinationContains: "Kyiv", fromDate, toDateExclusive, cancellationToken);
-        Console.WriteLine($"1. Multi-filter (category=1, destination contains Kyiv, date range): {filtered.Count} trip(s)");
+        Console.WriteLine($"1. Фільтрація (категорія=1, напрямок містить Kyiv, діапазон дат): {filtered.Count} поїздок");
         foreach (var trip in filtered)
         {
             Console.WriteLine($"   {trip.TripName} | {trip.Destination} | {trip.StartDate:yyyy-MM-dd}");
         }
 
         var sorted = await SortTripsAsync(db, cancellationToken);
-        Console.WriteLine($"2. Sorted trips: {sorted.Count}; first={sorted.FirstOrDefault()?.TripName ?? "(none)"}");
+        Console.WriteLine($"2. Відсортовано поїздок: {sorted.Count}; перша={sorted.FirstOrDefault()?.TripName ?? "(немає)"}");
 
         var projected = await ProjectTripsToDtoAsync(db, cancellationToken);
-        Console.WriteLine($"3. DTO projection: {projected.Count} row(s)");
+        Console.WriteLine($"3. Проєкція DTO: {projected.Count} записів");
         foreach (var trip in projected.Take(3))
         {
-            Console.WriteLine($"   {trip.TripName} | owner={trip.OwnerName} | category={trip.CategoryName} | items={trip.ItineraryItemCount}");
+            Console.WriteLine($"   {trip.TripName} | власник={trip.OwnerName} | категорія={trip.CategoryName} | пунктів={trip.ItineraryItemCount}");
         }
 
         var relatedTrips = await GetTripsWithRelatedDataAsync(db, cancellationToken);
         var firstRelatedTrip = relatedTrips.FirstOrDefault();
         Console.WriteLine(
-            $"4. Related data: {relatedTrips.Count} trip(s); first has " +
-            $"{firstRelatedTrip?.ItineraryItems.Count ?? 0} itinerary item(s) loaded.");
+            $"4. Пов’язані дані: поїздок {relatedTrips.Count}; для першої завантажено " +
+            $"пунктів маршруту: {firstRelatedTrip?.ItineraryItems.Count ?? 0}.");
 
         var grouped = await GroupBookingsByCategoryAsync(db, fromDate, toDateExclusive, cancellationToken);
-        Console.WriteLine($"5. GroupBy category with COUNT and SUM: {grouped.Count} group(s)");
+        Console.WriteLine($"5. Групування за категорією з COUNT і SUM: груп {grouped.Count}");
         foreach (var row in grouped)
         {
             Console.WriteLine(
@@ -198,7 +198,7 @@ public static class EfLinqQueriesDemo
         }
 
         var page = await GetTripPageAsync(db, pageNumber: 1, pageSize: 5, cancellationToken);
-        Console.WriteLine($"6. Pagination: page {page.PageNumber}, size {page.PageSize}, total {page.TotalCount}, returned {page.Items.Count}");
+        Console.WriteLine($"6. Пагінація: сторінка {page.PageNumber}, розмір {page.PageSize}, всього {page.TotalCount}, показано {page.Items.Count}");
         foreach (var trip in page.Items)
         {
             Console.WriteLine($"   {trip.TripName} | {trip.Destination} | {trip.StartDate:yyyy-MM-dd}");

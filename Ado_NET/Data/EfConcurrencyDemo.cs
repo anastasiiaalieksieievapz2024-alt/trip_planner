@@ -1,9 +1,9 @@
-using Kpz.Lab2.Models;
+﻿using Kpz.Lab2.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kpz.Lab2.Data;
 
-/// <summary>Demonstrates optimistic concurrency using SQL Server rowversion.</summary>
+/// <summary>Демонструє оптимістичний контроль конкурентності за допомогою SQL Server rowversion.</summary>
 public static class EfConcurrencyDemo
 {
     public static async Task RunAsync(string connectionString, CancellationToken cancellationToken)
@@ -13,11 +13,11 @@ public static class EfConcurrencyDemo
             .Options;
 
         Console.WriteLine();
-        Console.WriteLine("=== EF CORE OPTIMISTIC CONCURRENCY DEMO ===");
+        Console.WriteLine("=== ОПТИМІСТИЧНИЙ КОНТРОЛЬ КОНКУРЕНТНОСТІ EF CORE ===");
 
         int demoTripId;
 
-        // Create a dedicated temporary row so the demonstration does not change sample data.
+        // Створюємо окремий тимчасовий запис, щоб не змінювати початкові демонстраційні дані.
         await using (var setupDb = new KpzDbContext(options))
         {
             var template = await setupDb.Trips
@@ -53,34 +53,34 @@ public static class EfConcurrencyDemo
             var secondCopy = await secondDb.Trips.SingleAsync(
                 trip => trip.TripId == demoTripId, cancellationToken);
 
-            Console.WriteLine($"Both contexts loaded TripId={demoTripId} with the same rowversion.");
+            Console.WriteLine($"Обидва контексти завантажили TripId={demoTripId} з однаковим rowversion.");
 
             firstCopy.Description = "Updated by the first DbContext.";
             await firstDb.SaveChangesAsync(cancellationToken);
-            Console.WriteLine("First DbContext saved successfully; SQL Server generated a new rowversion.");
+            Console.WriteLine("Перший DbContext зберіг зміни; SQL Server створив нове значення rowversion.");
 
             secondCopy.Description = "Conflicting update from the second DbContext.";
 
             try
             {
                 await secondDb.SaveChangesAsync(cancellationToken);
-                Console.WriteLine("Unexpected: the second update succeeded without a concurrency conflict.");
+                Console.WriteLine("Неочікувано: друге оновлення пройшло без конфлікту конкурентності.");
             }
             catch (DbUpdateConcurrencyException exception)
             {
-                Console.WriteLine("Concurrency conflict detected: another context changed this trip first.");
+                Console.WriteLine("Виявлено конфлікт конкурентності: інший контекст раніше змінив цю поїздку.");
 
                 var entry = exception.Entries.Single();
                 var databaseValues = await entry.GetDatabaseValuesAsync(cancellationToken);
                 if (databaseValues is null)
                 {
-                    Console.WriteLine("The trip was deleted by another operation; the attempted update was discarded.");
+                    Console.WriteLine("Поїздку видалила інша операція; спробу оновлення скасовано.");
                 }
                 else
                 {
                     var currentTrip = (Trip)databaseValues.ToObject();
-                    Console.WriteLine($"Current description in database: {currentTrip.Description}");
-                    Console.WriteLine("The stale second update was not applied. Reload the latest values before retrying.");
+                    Console.WriteLine($"Поточний опис у базі даних: {currentTrip.Description}");
+                    Console.WriteLine("Застаріле оновлення не застосовано. Перед повтором потрібно завантажити актуальні дані.");
                 }
             }
         }
@@ -95,7 +95,7 @@ public static class EfConcurrencyDemo
                 await cleanupDb.SaveChangesAsync(cancellationToken);
             }
 
-            Console.WriteLine("Temporary concurrency demo trip was removed.");
+            Console.WriteLine("Тимчасову поїздку для демонстрації конкурентності видалено.");
         }
     }
 }

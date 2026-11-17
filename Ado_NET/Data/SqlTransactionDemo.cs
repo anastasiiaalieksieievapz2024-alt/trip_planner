@@ -1,9 +1,9 @@
-using System.Data;
+﻿using System.Data;
 using Microsoft.Data.SqlClient;
 
 namespace Kpz.Lab2.Data;
 
-/// <summary>Demonstrates a successful ADO.NET transaction and a business-rule rollback.</summary>
+/// <summary>Демонструє успішну транзакцію ADO.NET і відкат через порушення бізнес-правила.</summary>
 public static class SqlTransactionDemo
 {
     public static async Task RunAsync(string connectionString, CancellationToken cancellationToken)
@@ -34,9 +34,9 @@ public static class SqlTransactionDemo
             await transaction.CommitAsync(cancellationToken);
 
             Console.WriteLine();
-            Console.WriteLine("=== TRANSACTION DEMO: COMMIT ===");
-            Console.WriteLine($"Committed User #{userId}, Trip #{tripId}, ItineraryItem #{itemId}.");
-            Console.WriteLine($"Demo user email: {email}");
+            Console.WriteLine("=== ТРАНЗАКЦІЯ: ФІКСАЦІЯ ЗМІН ===");
+            Console.WriteLine($"Зафіксовано користувача №{userId}, поїздку №{tripId} і пункт маршруту №{itemId}.");
+            Console.WriteLine($"Email демонстраційного користувача: {email}");
         }
         catch
         {
@@ -60,7 +60,7 @@ public static class SqlTransactionDemo
                 rolledBackUserId = await InsertUserAsync(connection, transaction, email, cancellationToken);
                 var tripId = await InsertTripAsync(connection, transaction, rolledBackUserId, cancellationToken);
 
-                // EndDateTime is intentionally earlier than StartDateTime; CK_ItineraryItems_DateRange rejects it.
+                // Кінцева дата навмисно раніша за початкову, тому обмеження CK_ItineraryItems_DateRange відхилить запис.
                 await InsertItineraryItemAsync(
                     connection,
                     transaction,
@@ -75,9 +75,9 @@ public static class SqlTransactionDemo
             {
                 await transaction.RollbackAsync(CancellationToken.None);
                 Console.WriteLine();
-                Console.WriteLine("=== TRANSACTION DEMO: ROLLBACK ===");
-                Console.WriteLine("The itinerary date check rejected the invalid item (SQL error 547).");
-                Console.WriteLine("ROLLBACK was executed for the user and trip inserted earlier in this transaction.");
+                Console.WriteLine("=== ТРАНЗАКЦІЯ: ВІДКАТ ЗМІН ===");
+                Console.WriteLine("Перевірка дат відхилила некоректний пункт маршруту (помилка SQL 547).");
+                Console.WriteLine("Виконано ROLLBACK: створення користувача й поїздки в цій транзакції скасовано.");
             }
             catch
             {
@@ -86,7 +86,7 @@ public static class SqlTransactionDemo
             }
         }
 
-        // Verify outside the rolled-back transaction that the earlier user insert is gone.
+        // Поза транзакцією перевіряємо, що раніше доданий користувач справді відсутній.
         await using var verifyConnection = new SqlConnection(connectionString);
         await verifyConnection.OpenAsync(cancellationToken);
         await using var verifyCommand = new SqlCommand(
@@ -95,7 +95,7 @@ public static class SqlTransactionDemo
         verifyCommand.Parameters.Add("@UserId", SqlDbType.Int).Value = rolledBackUserId;
         verifyCommand.Parameters.Add("@Email", SqlDbType.NVarChar, 254).Value = email;
         var remainingRows = Convert.ToInt32(await verifyCommand.ExecuteScalarAsync(cancellationToken));
-        Console.WriteLine($"Rollback verification: matching Users rows = {remainingRows} (expected 0).");
+        Console.WriteLine($"Перевірка відкату: знайдено рядків Users = {remainingRows} (очікується 0).");
     }
 
     private static Task<int> InsertUserAsync(

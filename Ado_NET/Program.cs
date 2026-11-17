@@ -1,97 +1,107 @@
-using Kpz.Lab2.Data;
+﻿using Kpz.Lab2.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Text;
 
-// ������������ ���� ��������� ����������� �� ��������� DI ��� ����������� ����������.
+// Налаштування хоста та контейнера залежностей для консольної демонстрації.
+Console.OutputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 var builder = Host.CreateApplicationBuilder(args);
-// User Secrets ���� ������������� ������������ � appsettings.json ��� ���������� ������� � ���������.
+// User Secrets дає змогу зберігати конфіденційні налаштування окремо від appsettings.json.
 builder.Configuration.AddUserSecrets<Program>(optional: true);
 
-// ����� ���������� �������� � ConnectionStrings:KpzDb.
+// Отримуємо рядок підключення до бази даних із секції ConnectionStrings:KpzDb.
 var connectionString = builder.Configuration.GetConnectionString("KpzDb")
     ?? throw new InvalidOperationException("Connection string KpzDb is missing.");
 
-// �������� �������� EF Core �� SQL Server ��������� � ��������� �����������.
+// Реєструємо контекст EF Core для SQL Server і додавання демонстраційних даних.
 builder.Services.AddDbContext<KpzDbContext>(options =>
     options.UseSqlServer(connectionString).UseDevelopmentDataSeeding());
-// �������� ADO.NET CRUD ������ �� EF Core, �������������� ��� ����� ����� ����������.
+// Реєструємо окремий ADO.NET репозиторій для демонстрації CRUD.
 builder.Services.AddSingleton(new SqlCrudRepository(connectionString));
-// ������� ����� � ��������� ADO.NET JOIN �� ����������� ��������.
+// Реєструємо класи ADO.NET для складних SQL-запитів із JOIN.
 builder.Services.AddSingleton(new SqlComplexQueries(connectionString));
 
 using var host = builder.Build();
 using var scope = host.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<KpzDbContext>();
-// ����������� �� ������������ ������� �� ��� ������� ��������.
+// Застосовуємо всі наявні міграції перед демонстраціями.
 await db.Database.MigrateAsync();
 
-///////////////4 point CRUD demo///////////////////
+// Пункт 4 — ADO.NET CRUD: створення, читання, оновлення й видалення користувача та поїздки.
+// Реалізація: Data/SqlCrudRepository.cs.
 // var crud = scope.ServiceProvider.GetRequiredService<SqlCrudRepository>();
 // var token = CancellationToken.None;
 // var email = $"crud.demo.{Guid.NewGuid():N}@example.test";
 
-// // CREATE �� READ �����������
+// // СТВОРЕННЯ та ЧИТАННЯ користувача
 // var userId = await crud.CreateUserAsync(
 //     "CRUD Demo User", email, "DEMO_ONLY_HASH", token);
-// Console.WriteLine($"CREATE User: id={userId}");
+// Console.WriteLine($"СТВОРЕНО користувача: id={userId}");
 
 // var user = await crud.GetUserAsync(userId, token);
-// Console.WriteLine($"READ User: {user?.FullName}, {user?.Email}");
+// Console.WriteLine($"ПРОЧИТАНО користувача: {user?.FullName}, {user?.Email}");
 
-// // UPDATE �����������
+// // ОНОВЛЕННЯ користувача
 // var userUpdated = await crud.UpdateUserAsync(
 //     userId, "CRUD Demo User Updated", email, "DEMO_ONLY_HASH", token);
-// Console.WriteLine($"UPDATE User: {userUpdated}");
+// Console.WriteLine($"Користувача оновлено: {userUpdated}");
 
-// // CREATE �� READ �������
+// // СТВОРЕННЯ та ЧИТАННЯ поїздки
 // var tripId = await crud.CreateTripAsync(
 //     userId, 1, "CRUD Demo Trip", "Lviv",
 //     new DateOnly(2026, 11, 12), new DateOnly(2026, 11, 15),
-//     "�������� �����", token);
-// Console.WriteLine($"CREATE Trip: id={tripId}");
+//     "Демонстраційна поїздка для перевірки ADO.NET CRUD.", token);
+// Console.WriteLine($"СТВОРЕНО поїздку: id={tripId}");
 
 // var trip = await crud.GetTripAsync(tripId, token);
-// Console.WriteLine($"READ Trip: {trip?.TripName}, owner={trip?.OwnerName}");
+// Console.WriteLine($"ПРОЧИТАНО поїздку: {trip?.TripName}, власник={trip?.OwnerName}");
 
-// // UPDATE ������� ����������� RowVersion � ����������� ������
+// // ОНОВЛЕННЯ поїздки з перевіркою RowVersion для конкурентних змін
 // if (trip is not null)
 // {
 //     var newRowVersion = await crud.UpdateTripAsync(
 //         tripId, userId, 1, "CRUD Demo Trip Updated", "Lviv",
 //         new DateOnly(2026, 11, 12), new DateOnly(2026, 11, 15),
-//         "��������� �������� �����", trip.RowVersion, token);
-//     Console.WriteLine($"UPDATE Trip: {newRowVersion is not null}");
+//         "Оновлений опис демонстраційної поїздки.", trip.RowVersion, token);
+//     Console.WriteLine($"Поїздку оновлено: {newRowVersion is not null}");
 // }
 
-// // DELETE �������, ���� �����������
-// Console.WriteLine($"DELETE Trip: {await crud.DeleteTripAsync(tripId, token)}");
-// Console.WriteLine($"DELETE User: {await crud.DeleteUserAsync(userId, token)}");
+// // ВИДАЛЕННЯ тестової поїздки та користувача
+// Console.WriteLine($"Поїздку видалено: {await crud.DeleteTripAsync(tripId, token)}");
+// Console.WriteLine($"Користувача видалено: {await crud.DeleteUserAsync(userId, token)}");
 
 
-/////////////////5 point  ////////////////////
+// Пункт 5 — складні SQL-запити: JOIN для поїздок і маршруту та GROUP BY для статистики бронювань.
+// Реалізація запитів: Data/SqlComplexQueries.cs; запуск і вивід результатів: Data/ComplexQueryDemo.cs.
 // var complexQueries = scope.ServiceProvider.GetRequiredService<SqlComplexQueries>();
 // await ComplexQueryDemo.RunAsync(complexQueries, CancellationToken.None);
 
-////////////////6 point////////////////////////
-//await SqlTransactionDemo.RunAsync(connectionString, CancellationToken.None);
+// Пункт 6 — ADO.NET транзакції: успішний COMMIT і ROLLBACK після порушення обмеження дат.
+// Реалізація сценаріїв: Data/SqlTransactionDemo.cs.
+// await SqlTransactionDemo.RunAsync(connectionString, CancellationToken.None);
 
 
-//////////////7 point///////////////////////////
+// Пункт 7 — перегляд моделі EF Core: таблиці, первинні ключі, унікальні індекси та зовнішні ключі.
+// Реалізація: Data/EfModelDemo.cs; налаштування сутностей: Data/EntityConfigurations.cs.
 // EfModelDemo.Print(db.Model);
 
-////////////////////8 point///////////////////
-//await EfCrudBusinessDemo.RunAsync(db, CancellationToken.None);
+// Пункт 8 — EF Core CRUD і складна транзакційна операція створення графа поїздки.
+// Реалізація обох сценаріїв: Data/EfCrudBusinessDemo.cs.
+// await EfCrudBusinessDemo.RunAsync(db, CancellationToken.None);
 
-////////////////////9 point///////////////////
-//await EfLinqQueriesDemo.RunAsync(db, CancellationToken.None);
+// Пункт 9 — LINQ-запити EF Core: фільтрація, сортування, проєкція, групування та пагінація.
+// Реалізація запитів і демонстраційного виводу: Data/EfLinqQueriesDemo.cs.
+// await EfLinqQueriesDemo.RunAsync(db, CancellationToken.None);
 
-////////////////////10 point//////////////////
-//await EfConcurrencyDemo.RunAsync(connectionString, CancellationToken.None);
+// Пункт 10 — concurrency conflict: два DbContext оновлюють один запис із rowversion.
+// Реалізація сценарію: Data/EfConcurrencyDemo.cs; налаштування rowversion: Data/EntityConfigurations.cs.
+// await EfConcurrencyDemo.RunAsync(connectionString, CancellationToken.None);
 
-////////////////////13 point//////////////////
+// Пункт 13 — SQL, який EF Core генерує з LINQ: фільтрація, проєкція, зв’язки та групування.
+// Реалізація: Data/EfQuerySqlDemo.cs; SQL отримується через ToQueryString().
 //EfQuerySqlDemo.Run(db);
 
-// ������� ��� ��������� �� Program � ����������� User Secrets.
+// Потрібно для посилання на тип Program під час налаштування User Secrets.
 public partial class Program;

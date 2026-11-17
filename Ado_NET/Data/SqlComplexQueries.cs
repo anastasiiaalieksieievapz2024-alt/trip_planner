@@ -1,9 +1,9 @@
-using System.Data;
+﻿using System.Data;
 using Microsoft.Data.SqlClient;
 
 namespace Kpz.Lab2.Data;
 
-/// <summary>����� ���������� ������ ��� ������� �� ��� �������� ������.</summary>
+/// Рядок результату запиту з поїздкою, власником, категорією та пунктом маршруту.
 public sealed record TripItineraryRow(
     int TripId,
     string TripName,
@@ -17,7 +17,7 @@ public sealed record TripItineraryRow(
     string? ItemType,
     DateTime? ItemStartDateTime);
 
-/// <summary>ϳ������ ������� ��������� � ��������� �� �������� �� ���������.</summary>
+/// Підсумок поїздок і бронювань, згрупованих за категорією та напрямком.
 public sealed record TripBookingSummaryRow(
     string CategoryName,
     string Destination,
@@ -26,16 +26,16 @@ public sealed record TripBookingSummaryRow(
     decimal TotalBookingAmount);
 
 /// <summary>
-/// ������ �������������� SQL-������ ��� ������������ JOIN �� GROUP BY ����� ADO.NET.
+/// ADO.NET репозиторій складних SQL-запитів із JOIN, LEFT JOIN та GROUP BY.
 /// </summary>
 public sealed class SqlComplexQueries(string connectionString)
 {
     private readonly string _connectionString = connectionString;
 
     /// <summary>
-    /// ������� ������� � ����������, ���������� �� �������� ��������.
-    /// Գ����� �� ������� ������� ������� � ������'������ �� ��������;
-    /// ��������� ����� �� �����, ������ ������� �� ����� ������ ��������.
+    /// Повертає поїздки за період із власником, категорією та пунктами маршруту.
+    /// Категорію можна обмежити необов’язковим параметром.
+    /// LEFT JOIN залишає у результаті поїздки без пунктів маршруту.
     /// </summary>
     public async Task<IReadOnlyList<TripItineraryRow>> GetTripsWithItineraryAsync(
         DateOnly fromDate,
